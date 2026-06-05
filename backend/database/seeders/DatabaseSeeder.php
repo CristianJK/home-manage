@@ -2,6 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\PersonalExpense;
+use App\Models\SavingGoal;
+use App\Models\SharedExpense;
+use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -15,11 +19,21 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
+        $user = User::factory()->create([
+            'name' => 'Usuario Test',
             'email' => 'test@example.com',
+            'salary' => 5000.00,
         ]);
+
+        $user2 = User::factory()->create([
+            'name' => 'Usuario Test 1',
+            'email' => 'test2@example.com',
+            'salary' => 3000.00,
+        ]);
+
+        Task::factory(5)->create(['user_id' => $user->id]);
+        SharedExpense::factory(10)->create();
+        PersonalExpense::factory(5)->create(['user_id' => $user->id]);
+        SavingGoal::factory(2)->create(['user_id' => $user->id]);
     }
 }

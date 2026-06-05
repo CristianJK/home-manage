@@ -5,7 +5,7 @@ services:
       - "8001:80"
     volumes:
       - ./backend:/var/www/html
-      - ./docker/nginx/default.conf:/etc/nginx*conf.d/default.conf
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - app
   app:
@@ -19,7 +19,7 @@ services:
   db:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_DB=hombe_mange
+      - POSTGRES_DB=home_manage
       - POSTGRES_USER=root
       - POSTGRES_PASSWORD=secret
     ports:
