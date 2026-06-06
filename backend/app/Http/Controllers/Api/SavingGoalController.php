@@ -21,10 +21,12 @@ class SavingGoalController extends Controller
      */
     public function store(Request $request)
     {
+        //'user_id', 'target_name', 'target_amount', 'deadline', 'current_amount'
         $validated = $request->validate([
             'target_name' => 'required|string',
             'target_amount' => 'required|numeric',
             'deadline' => 'required|date',
+            'current_amount' => 'nullable|numeric',
         ]);
 
         $goal = $request->user()->savingGoals()->create($validated);
@@ -36,7 +38,8 @@ class SavingGoalController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $goal = SavingGoal::find($id);
+        return response()->json($goal);
     }
 
     /**
@@ -44,7 +47,17 @@ class SavingGoalController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        //'user_id', 'target_name', 'target_amount', 'deadline', 'current_amount'
+        $validate = $request->validate([
+            'target_name' => 'required|string',
+            'target_amount' => 'required|numeric',
+            'deadline' => 'required|date',
+            'current_amount' => 'nullable|numeric',
+        ]);
+
+        $savingGoal = SavingGoal::findOrFail($id);
+        $savingGoal->update($validate);
+        return response()->json($savingGoal);
     }
 
     public function updateProgress(Request $request, SavingGoal $savingGoal)
@@ -61,6 +74,8 @@ class SavingGoalController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $savingGoal = SavingGoal::findOrFail($id);
+        $savingGoal->delete();
+        return response()->json($savingGoal);
     }
 }

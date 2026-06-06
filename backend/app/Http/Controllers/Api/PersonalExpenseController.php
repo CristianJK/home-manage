@@ -21,10 +21,11 @@ class PersonalExpenseController extends Controller
      */
     public function store(Request $request)
     {
+        //'user_id', 'concept', 'amount', 'category'
         $validated = $request->validate([
             'concept' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0',
-            'category' => 'required|string',
+            'category' => 'required|string'
         ]);
 
         $expense = $request->user()->personalExpense()->create($validated);
@@ -37,7 +38,8 @@ class PersonalExpenseController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $expense = PersonalExpense::findOrFail($id);
+        return response()->json($expense);
     }
 
     /**
@@ -45,7 +47,15 @@ class PersonalExpenseController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $validate = $request->validate([
+            'concept' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0',
+            'category' => 'required|string'
+        ]);
+
+        $expense = PersonalExpense::findOrFail($id);
+        $expense->update($validate);
+        return response()->json($expense);
     }
 
     /**
@@ -54,11 +64,7 @@ class PersonalExpenseController extends Controller
     public function destroy(string $id)
     {
         $expense = PersonalExpense::findOrFail($id);
-
-        $this->authorize('delete', $expense);
-
         $expense->delete();
-
         return response()->json(null, 204);
     }
 }
