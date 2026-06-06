@@ -115,8 +115,9 @@ class SavingGoalTest extends TestCase
         $response = $this->getJson('/api/saving-goals/99999');
 
         // SavingGoalController::show uses find() not findOrFail(), so it returns null
-        $response->assertOk()
-            ->assertJson(null);
+        // In Laravel 13, response()->json(null) serializes to {} instead of null
+        $response->assertOk();
+        $this->assertSame('{}', $response->getContent());
     }
 
     // ─── UPDATE ───────────────────────────────────────────────────────
