@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const TaskPage = lazy(() => import('./pages/TaskPage'))
 
 function AppLayout({ children }) {
   return (
@@ -38,6 +39,7 @@ function App() {
           <AppLayout>
             <Routes>
               <Route path="/" element={<DashboardPage />} />
+              <Route path="/tasks" element={<TaskPage />} />
             </Routes>
           </AppLayout>
         } />
