@@ -10,9 +10,9 @@ const LoginPage = lazy(() => import("./pages/LoginPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const TaskPage = lazy(() => import("./pages/TaskPage"));
 const SharedFinancesPage = lazy(() => import("./pages/SharedFinancesPage"));
-/*const SavingsPage = lazy(() => import('./pages/SavingsPage'))
-const CalendarPage = lazy(() => import('./pages/CalendarPage'))
-const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+const SavingsPage = lazy(() => import("./pages/SavingsPage"));
+const CalendarPage = lazy(() => import("./pages/LogisticsCalendarPage"));
+/*const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const HelpPage = lazy(() => import('./pages/HelpPage'))*/
 
 function AppLayout({ children }) {
@@ -58,6 +58,8 @@ function App() {
                   path="/shared-finances"
                   element={<SharedFinancesPage />}
                 />
+                <Route path="/savings" element={<SavingsPage />} />
+                <Route path="/calendar" element={<CalendarPage />} />
               </Routes>
             </AppLayout>
           }
