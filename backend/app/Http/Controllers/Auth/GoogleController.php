@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Auth;
 use Exception;
+use Illuminate\Support\Str;
 
 class GoogleController extends Controller
 {
@@ -32,7 +33,7 @@ class GoogleController extends Controller
                 'name' => $googleUser->getName(),
                 'google_id' => $googleUser->getId(),
                 'avatar' => $googleUser->getAvatar(),
-                'password' => bcrypt(str_random(24)),
+                'password' => bcrypt(Str::random(24)),
             ]);
 
             $token = $user->createToken('auth_token')->plainTextToken;

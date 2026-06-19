@@ -55,7 +55,7 @@ Route::prefix('shared-expense')->group(function () {
     Route::delete('/{id}', [SharedExpenseController::class, 'destroy']);
 });
 
-Route::prefix('task')->group(function () {
+Route::prefix('task')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [TaskController::class, 'index']);
     Route::post('/', [TaskController::class, 'store']);
     Route::get('/{id}', [TaskController::class, 'show']);

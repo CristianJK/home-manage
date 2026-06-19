@@ -49,7 +49,6 @@ class TaskTest extends TestCase
             'title' => 'Clean kitchen',
             'description' => 'Deep clean the entire kitchen',
             'status' => 'pending',
-            'user_id' => $this->user->id,
             'frequency' => 'weekly',
             'scheduled_at' => now()->addDays(3)->toDateString(),
         ];
@@ -70,24 +69,23 @@ class TaskTest extends TestCase
         $response = $this->postJson('/api/task', []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['title', 'description', 'status', 'user_id', 'frequency', 'scheduled_at']);
+            ->assertJsonValidationErrors(['title', 'status']);
     }
 
-    public function test_store_fails_with_invalid_user_id(): void
+    public function test_store_defaults_user_id_from_auth(): void
     {
         $payload = [
             'title' => 'Test Task',
-            'description' => 'Test description',
             'status' => 'pending',
-            'user_id' => 99999,
-            'frequency' => 'daily',
-            'scheduled_at' => now()->addDays(1)->toDateString(),
         ];
 
         $response = $this->postJson('/api/task', $payload);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['user_id']);
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('tasks', [
+            'title' => 'Test Task',
+            'user_id' => $this->user->id,
+        ]);
     }
 
     public function test_store_fails_with_past_scheduled_at(): void
@@ -96,7 +94,6 @@ class TaskTest extends TestCase
             'title' => 'Test Task',
             'description' => 'Test description',
             'status' => 'pending',
-            'user_id' => $this->user->id,
             'frequency' => 'daily',
             'scheduled_at' => now()->subDays(5)->toDateString(),
         ];
@@ -136,7 +133,6 @@ class TaskTest extends TestCase
             'title' => 'Updated Task',
             'description' => 'Updated description',
             'status' => 'completed',
-            'user_id' => $this->user->id,
             'frequency' => 'monthly',
             'scheduled_at' => now()->addDays(10)->toDateString(),
         ];
@@ -153,25 +149,27 @@ class TaskTest extends TestCase
         ]);
     }
 
-    public function test_update_fails_without_required_fields(): void
+    public function test_update_partial_fields_only(): void
     {
-        $task = Task::factory()->create(['user_id' => $this->user->id]);
+        $task = Task::factory()->create([
+            'user_id' => $this->user->id,
+            'title' => 'Original Title',
+            'status' => 'pending',
+        ]);
 
-        $response = $this->patchJson("/api/task/{$task->id}", []);
+        $response = $this->patchJson("/api/task/{$task->id}", [
+            'title' => 'Only Title Changed',
+        ]);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['title', 'description', 'status', 'user_id', 'frequency', 'scheduled_at']);
+        $response->assertOk()
+            ->assertJsonFragment(['title' => 'Only Title Changed']);
     }
 
     public function test_update_returns_404_for_non_existent_task(): void
     {
         $payload = [
             'title' => 'Test',
-            'description' => 'Test',
             'status' => 'pending',
-            'user_id' => $this->user->id,
-            'frequency' => 'daily',
-            'scheduled_at' => now()->addDays(1)->toDateString(),
         ];
 
         $response = $this->patchJson('/api/task/99999', $payload);
