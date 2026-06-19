@@ -21,6 +21,9 @@ class SavingGoalFactory extends Factory
     {
         return [
             'target_name' => $this->faker->sentence(),
+            'category' => $this->faker->optional()->randomElement([
+                'emergency', 'travel', 'housing', 'education', 'health', 'investment', 'other'
+            ]),
             'target_amount' => $this->faker->randomFloat(2, 1000, 50000),
             'deadline' => $this->faker->dateTimeBetween('now', '+1 year'),
             'current_amount' => $this->faker->randomFloat(2, 0, 50000),

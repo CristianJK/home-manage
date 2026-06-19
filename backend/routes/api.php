@@ -39,7 +39,7 @@ Route::prefix('personal-expense')->group(function () {
     Route::delete('/{id}', [PersonalExpenseController::class, 'destroy']);
 });
 
-Route::prefix('saving-goals')->group(function () {
+Route::prefix('saving-goals')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [SavingGoalController::class, 'index']);
     Route::post('/', [SavingGoalController::class, 'store']);
     Route::get('/{id}', [SavingGoalController::class, 'show']);

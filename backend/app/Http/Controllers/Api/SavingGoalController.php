@@ -13,7 +13,12 @@ class SavingGoalController extends Controller
      */
     public function index(Request $request)
     {
-        return response()->json($request->user()->savingGoals);
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'No autenticado'], 401);
+        }
+        $savingGoal =$user->savingGoals()->get();
+        return response()->json($savingGoal);
     }
 
     /**
@@ -24,6 +29,7 @@ class SavingGoalController extends Controller
         //'user_id', 'target_name', 'target_amount', 'deadline', 'current_amount'
         $validated = $request->validate([
             'target_name' => 'required|string',
+            'category' => 'nullable|string|max:255',
             'target_amount' => 'required|numeric',
             'deadline' => 'required|date',
             'current_amount' => 'nullable|numeric',
@@ -50,6 +56,7 @@ class SavingGoalController extends Controller
         //'user_id', 'target_name', 'target_amount', 'deadline', 'current_amount'
         $validate = $request->validate([
             'target_name' => 'required|string',
+            'category' => 'nullable|string|max:255',
             'target_amount' => 'required|numeric',
             'deadline' => 'required|date',
             'current_amount' => 'nullable|numeric',
