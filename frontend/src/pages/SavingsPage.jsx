@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router'
 import api from '../services/api'
 import { SavingCard } from '../components/SavingCard'
 import { SavingModal } from '../components/SavingModal'
+import { PersonalExpenseTable } from '../components/PersonalExpenseTable'
+import { PersonalExpenseModal } from '../components/PersonalExpenseModal'
 
 export default function SavingsPage() {
   const [savings, setSavings] = useState([])
@@ -10,6 +13,19 @@ export default function SavingsPage() {
   const [editingSaving, setEditingSaving] = useState(null)
   const [serverError, setServerError] = useState(null)
 
+  const [expenses, setExpenses] = useState([])
+  const [expenseModalOpen, setExpenseModalOpen] = useState(false)
+  const [editingExpense, setEditingExpense] = useState(null)
+  const [expenseServerError, setExpenseServerError] = useState(null)
+
+  const navigate = useNavigate()
+
+  const fetchExpenses = useCallback(() => {
+    api.get('/personal-expense')
+      .then(res => setExpenses(Array.isArray(res.data) ? res.data : []))
+      .catch(err => console.error('Error fetching expenses:', err))
+  }, [])
+
   const fetchSavings = useCallback(() => {
     api.get('/saving-goals')
       .then(res => setSavings(Array.isArray(res.data) ? res.data : []))
@@ -17,7 +33,7 @@ export default function SavingsPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  useEffect(() => { fetchSavings() }, [fetchSavings])
+  useEffect(() => { fetchSavings(); fetchExpenses() }, [fetchSavings, fetchExpenses])
 
   const openCreate = () => {
     setEditingSaving(null)
@@ -65,6 +81,65 @@ export default function SavingsPage() {
       } else {
         setServerError('Error al guardar la meta. Intenta de nuevo.')
       }
+    }
+  }
+
+  const openCreateExpense = () => {
+    setEditingExpense(null)
+    setExpenseServerError(null)
+    setExpenseModalOpen(true)
+  }
+
+  const openEditExpense = (expense) => {
+    setEditingExpense(expense)
+    setExpenseServerError(null)
+    setExpenseModalOpen(true)
+  }
+
+  const closeExpenseModal = () => {
+    setExpenseModalOpen(false)
+    setEditingExpense(null)
+    setExpenseServerError(null)
+  }
+
+  const handleExpenseSubmit = async (data) => {
+    setExpenseServerError(null)
+    const payload = Object.fromEntries(
+      Object.entries(data).map(([key, value]) => [
+        key,
+        key === 'amount' ? Number(value) : value,
+      ]),
+    )
+    try {
+      if (editingExpense) {
+        const res = await api.patch(`/personal-expense/${editingExpense.id}`, payload)
+        setExpenses(prev => prev.map(e => e.id === editingExpense.id ? res.data : e))
+      } else {
+        const res = await api.post('/personal-expense', payload)
+        setExpenses(prev => [...prev, res.data])
+      }
+      closeExpenseModal()
+    } catch (err) {
+      if (err.response?.status === 422) {
+        const fields = err.response.data?.errors
+        if (fields) {
+          setExpenseServerError(Object.values(fields).flat().join('\n'))
+        } else {
+          setExpenseServerError('Error de validación. Revisa los campos.')
+        }
+      } else {
+        setExpenseServerError('Error al guardar el gasto. Intenta de nuevo.')
+      }
+    }
+  }
+
+  const handleExpenseDelete = async (expense) => {
+    if (!window.confirm(`¿Eliminar "${expense.concept}"?`)) return
+    try {
+      await api.delete(`/personal-expense/${expense.id}`)
+      setExpenses(prev => prev.filter(e => e.id !== expense.id))
+    } catch (err) {
+      console.error('Error deleting expense:', err)
     }
   }
 
@@ -125,97 +200,34 @@ export default function SavingsPage() {
       <section className="bg-surface border border-outline rounded-xl overflow-hidden shadow-sm">
         <div className="p-4 border-b border-outline flex justify-between items-center bg-surface-variant/30">
           <div>
-            <h2 className="text-base font-semibold">Gastos Recurrentes</h2>
-            <p className="text-sm text-text-secondary">Administra tus suscripciones y pagos fijos.</p>
+            <h2 className="text-base font-semibold">Gastos Personales</h2>
+            <p className="text-sm text-text-secondary">Administra tus gastos y pagos.</p>
           </div>
-          <button className="flex items-center gap-2 text-primary text-xs font-medium hover:bg-primary-light/10 p-2 rounded-lg transition-colors">
+          <button
+            onClick={openCreateExpense}
+            className="flex items-center gap-2 text-primary text-xs font-medium hover:bg-primary-light/10 p-2 rounded-lg transition-colors"
+          >
             <span className="material-symbols-outlined">add_circle</span>
             Nuevo Gasto
           </button>
         </div>
-        <div className="divide-y divide-outline">
-          <div className="p-4 flex items-center justify-between hover:bg-surface-variant transition-colors group">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 flex items-center justify-center bg-surface-variant rounded-full">
-                <span className="material-symbols-outlined text-text-secondary">tv</span>
-              </div>
-              <div>
-                <h4 className="text-base font-semibold">Netflix Premium</h4>
-                <p className="text-xs font-medium text-text-secondary">Entretenimiento</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="text-right">
-                <p className="text-sm font-bold text-text-primary">$18.99</p>
-                <span className="text-xs font-medium px-2 py-0.5 bg-surface-variant text-text-primary rounded-full">Mensual</span>
-              </div>
-              <span className="material-symbols-outlined text-text-secondary group-hover:text-primary cursor-pointer transition-colors">more_vert</span>
-            </div>
+        <PersonalExpenseTable
+          expenses={expenses}
+          onEdit={openEditExpense}
+          onDelete={handleExpenseDelete}
+          maxRows={5}
+        />
+        {expenses.length > 5 && (
+          <div className="p-4 bg-surface-variant/20 flex justify-center">
+            <button
+              onClick={() => navigate('/savings/expenses')}
+              className="text-xs font-medium text-text-secondary hover:text-primary transition-colors flex items-center gap-2"
+            >
+              Ver todos los gastos
+              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </button>
           </div>
-
-          <div className="p-4 flex items-center justify-between hover:bg-surface-variant transition-colors group">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 flex items-center justify-center bg-surface-variant rounded-full">
-                <span className="material-symbols-outlined text-text-secondary">apartment</span>
-              </div>
-              <div>
-                <h4 className="text-base font-semibold">Renta Apartamento</h4>
-                <p className="text-xs font-medium text-text-secondary">Vivienda</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="text-right">
-                <p className="text-sm font-bold text-text-primary">$1,250.00</p>
-                <span className="text-xs font-medium px-2 py-0.5 bg-surface-variant text-text-primary rounded-full">Mensual</span>
-              </div>
-              <span className="material-symbols-outlined text-text-secondary group-hover:text-primary cursor-pointer transition-colors">more_vert</span>
-            </div>
-          </div>
-
-          <div className="p-4 flex items-center justify-between hover:bg-surface-variant transition-colors group">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 flex items-center justify-center bg-surface-variant rounded-full">
-                <span className="material-symbols-outlined text-text-secondary">health_and_safety</span>
-              </div>
-              <div>
-                <h4 className="text-base font-semibold">Seguro de Vida Anual</h4>
-                <p className="text-xs font-medium text-text-secondary">Salud y Seguridad</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="text-right">
-                <p className="text-sm font-bold text-text-primary">$840.00</p>
-                <span className="text-xs font-medium px-2 py-0.5 bg-primary-light text-text-primary rounded-full">Anual</span>
-              </div>
-              <span className="material-symbols-outlined text-text-secondary group-hover:text-primary cursor-pointer transition-colors">more_vert</span>
-            </div>
-          </div>
-
-          <div className="p-4 flex items-center justify-between hover:bg-surface-variant transition-colors group">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 flex items-center justify-center bg-surface-variant rounded-full">
-                <span className="material-symbols-outlined text-text-secondary">bolt</span>
-              </div>
-              <div>
-                <h4 className="text-base font-semibold">Luz y Energía</h4>
-                <p className="text-xs font-medium text-text-secondary">Servicios Básicos</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="text-right">
-                <p className="text-sm font-bold text-text-primary">$85.20</p>
-                <span className="text-xs font-medium px-2 py-0.5 bg-surface-variant text-text-primary rounded-full">Mensual</span>
-              </div>
-              <span className="material-symbols-outlined text-text-secondary group-hover:text-primary cursor-pointer transition-colors">more_vert</span>
-            </div>
-          </div>
-        </div>
-        <div className="p-4 bg-surface-variant/20 flex justify-center">
-          <button className="text-xs font-medium text-text-secondary hover:text-primary transition-colors flex items-center gap-2">
-            Ver todos los gastos recurrentes
-            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-          </button>
-        </div>
+        )}
       </section>
 
       <section className="mt-6 relative overflow-hidden rounded-2xl h-48 flex items-center p-6 bg-surface border border-outline">
@@ -253,6 +265,23 @@ export default function SavingsPage() {
             : undefined
         }
         title={editingSaving ? 'Editar meta de ahorro' : 'Nueva meta de ahorro'}
+      />
+
+      <PersonalExpenseModal
+        isOpen={expenseModalOpen}
+        onClose={closeExpenseModal}
+        onSubmit={handleExpenseSubmit}
+        serverError={expenseModalOpen ? expenseServerError : null}
+        defaultValues={
+          editingExpense
+            ? {
+                concept: editingExpense.concept,
+                amount: String(editingExpense.amount),
+                category: editingExpense.category,
+              }
+            : undefined
+        }
+        title={editingExpense ? 'Editar gasto' : 'Nuevo gasto'}
       />
     </>
   )

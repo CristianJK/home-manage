@@ -11,6 +11,7 @@ const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const TaskPage = lazy(() => import("./pages/TaskPage"));
 const SharedFinancesPage = lazy(() => import("./pages/SharedFinancesPage"));
 const SavingsPage = lazy(() => import("./pages/SavingsPage"));
+const PersonalExpensesPage = lazy(() => import("./pages/PersonalExpensesPage"));
 const CalendarPage = lazy(() => import("./pages/LogisticsCalendarPage"));
 /*const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const HelpPage = lazy(() => import('./pages/HelpPage'))*/
@@ -59,6 +60,7 @@ function App() {
                   element={<SharedFinancesPage />}
                 />
                 <Route path="/savings" element={<SavingsPage />} />
+                <Route path="/savings/expenses" element={<PersonalExpensesPage />} />
                 <Route path="/calendar" element={<CalendarPage />} />
               </Routes>
             </AppLayout>

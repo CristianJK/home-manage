@@ -31,7 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/saving-goals/{id}', [SavingGoalController::class, 'destroy']);
 });
 
-Route::prefix('personal-expense')->group(function () {
+Route::prefix('personal-expense')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [PersonalExpenseController::class, 'index']);
     Route::post('/', [PersonalExpenseController::class, 'store']);
     Route::get('/{id}', [PersonalExpenseController::class, 'show']);
