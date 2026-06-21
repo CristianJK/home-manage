@@ -13,9 +13,7 @@ class SharedExpenseController extends Controller
      */
     public function index()
     {
-        return response()->json([
-            SharedExpense::all()
-        ]);
+        return response()->json(SharedExpense::all());
     }
 
     /**
@@ -29,7 +27,7 @@ class SharedExpenseController extends Controller
             'frequency' => 'required|string|max:255',
             'due_date' => 'required|date|after_or_equal:today',
             'is_paid' => 'required|boolean',
-            'comment' => 'required|string|max:255',
+            'comment' => 'nullable|string|max:255',
         ]);
 
         $validate['user_id'] = $request->user()->id;

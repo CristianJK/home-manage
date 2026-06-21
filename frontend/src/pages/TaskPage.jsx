@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
-import { TaskCard } from "../components/TaskCard";
-import { TaskModal } from "../components/TaskModal";
+import { TaskCard } from "../features/tasks/TaskCard";
+import { TaskModal } from "../features/tasks/TaskModal";
 
 export default function TaskPage() {
   const [tasks, setTasks] = useState([]);

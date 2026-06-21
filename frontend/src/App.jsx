@@ -1,15 +1,16 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router";
-import { Header } from "./components/Header";
-import { SideNavBar } from "./components/sideNavBar";
-import { AuthProvider, useAuth } from "./context/AuthContext";
-import GuestRoute from "./components/GuestRoute";
-import ProtectedRoute from "./components/ProtectedRoute";
+import { Header } from "./components/layout/Header";
+import { SideNavBar } from "./components/layout/sideNavBar";
+import GuestRoute from "./features/auth/GuestRoute";
+import ProtectedRoute from "./features/auth/ProtectedRoute";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const TaskPage = lazy(() => import("./pages/TaskPage"));
 const SharedFinancesPage = lazy(() => import("./pages/SharedFinancesPage"));
+const SharedPercentagePage = lazy(() => import("./pages/SharedPercentagePage"));
+const PaymentsPage = lazy(() => import("./pages/PaymentsPage"));
 const SavingsPage = lazy(() => import("./pages/SavingsPage"));
 const PersonalExpensesPage = lazy(() => import("./pages/PersonalExpensesPage"));
 const CalendarPage = lazy(() => import("./pages/LogisticsCalendarPage"));
@@ -59,8 +60,16 @@ function App() {
                   path="/shared-finances"
                   element={<SharedFinancesPage />}
                 />
+                <Route
+                  path="/shared-finances/percentages"
+                  element={<SharedPercentagePage />}
+                />
                 <Route path="/savings" element={<SavingsPage />} />
-                <Route path="/savings/expenses" element={<PersonalExpensesPage />} />
+                <Route path="/payments" element={<PaymentsPage />} />
+                <Route
+                  path="/savings/expenses"
+                  element={<PersonalExpensesPage />}
+                />
                 <Route path="/calendar" element={<CalendarPage />} />
               </Routes>
             </AppLayout>

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router'
 import api from '../services/api'
-import { PersonalExpenseTable } from '../components/PersonalExpenseTable'
-import { PersonalExpenseModal } from '../components/PersonalExpenseModal'
+import { PersonalExpenseTable } from '../features/savings/PersonalExpenseTable'
+import { PersonalExpenseModal } from '../features/savings/PersonalExpenseModal'
 
 export default function PersonalExpensesPage() {
   const [expenses, setExpenses] = useState([])

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { loginSchema } from '../schemas/auth'
+import { loginSchema } from '../features/auth/authSchema'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';

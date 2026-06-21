@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router'
 import api from '../services/api'
-import { SavingCard } from '../components/SavingCard'
-import { SavingModal } from '../components/SavingModal'
-import { PersonalExpenseTable } from '../components/PersonalExpenseTable'
-import { PersonalExpenseModal } from '../components/PersonalExpenseModal'
+import { SavingCard } from '../features/savings/SavingCard'
+import { SavingModal } from '../features/savings/SavingModal'
+import { PersonalExpenseTable } from '../features/savings/PersonalExpenseTable'
+import { PersonalExpenseModal } from '../features/savings/PersonalExpenseModal'
 
 export default function SavingsPage() {
   const [savings, setSavings] = useState([])
@@ -217,17 +217,15 @@ export default function SavingsPage() {
           onDelete={handleExpenseDelete}
           maxRows={5}
         />
-        {expenses.length > 5 && (
-          <div className="p-4 bg-surface-variant/20 flex justify-center">
-            <button
-              onClick={() => navigate('/savings/expenses')}
-              className="text-xs font-medium text-text-secondary hover:text-primary transition-colors flex items-center gap-2"
-            >
-              Ver todos los gastos
-              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-            </button>
-          </div>
-        )}
+        <div className="p-4 bg-surface-variant/20 flex justify-center">
+          <button
+            onClick={() => navigate('/savings/expenses')}
+            className="text-xs font-medium text-text-secondary hover:text-primary transition-colors flex items-center gap-2"
+          >
+            Ver todos los gastos
+            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+          </button>
+        </div>
       </section>
 
       <section className="mt-6 relative overflow-hidden rounded-2xl h-48 flex items-center p-6 bg-surface border border-outline">

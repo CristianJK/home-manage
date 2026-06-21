@@ -1,15 +1,17 @@
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { personalExpenseSchema } from '../schemas/personalExpense'
+import { savingGoalSchema } from './savingGoalSchema'
 
-export function PersonalExpenseModal({ isOpen, onClose, onSubmit, defaultValues, title, serverError }) {
+export function SavingModal({ isOpen, onClose, onSubmit, defaultValues, title, serverError }) {
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm({
-    resolver: zodResolver(personalExpenseSchema),
+    resolver: zodResolver(savingGoalSchema),
     defaultValues: {
-      concept: '',
-      amount: '',
+      target_name: '',
       category: '',
+      target_amount: '',
+      deadline: '',
+      current_amount: '',
       ...defaultValues,
     },
   })
@@ -17,9 +19,11 @@ export function PersonalExpenseModal({ isOpen, onClose, onSubmit, defaultValues,
   useEffect(() => {
     if (isOpen) {
       reset({
-        concept: '',
-        amount: '',
+        target_name: '',
         category: '',
+        target_amount: '',
+        deadline: '',
+        current_amount: '',
         ...defaultValues,
       })
     }
@@ -61,45 +65,74 @@ export function PersonalExpenseModal({ isOpen, onClose, onSubmit, defaultValues,
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="expense-concept">Concepto</label>
+            <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="saving-name">Nombre de la meta</label>
             <input
-              {...register('concept')}
+              {...register('target_name')}
               className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-              id="expense-concept"
-              placeholder="Ej: Supermercado"
+              id="saving-name"
+              placeholder="Ej: Fondo de Emergencia"
             />
-            {errors.concept && <p className="text-error text-sm mt-1">{errors.concept.message}</p>}
+            {errors.target_name && <p className="text-error text-sm mt-1">{errors.target_name.message}</p>}
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="expense-amount">Monto ($)</label>
-            <input
-              {...register('amount')}
-              className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-              id="expense-amount"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="150.00"
-            />
-            {errors.amount && <p className="text-error text-sm mt-1">{errors.amount.message}</p>}
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="expense-category">Categoría</label>
+            <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="saving-category">Categoría</label>
             <select
               {...register('category')}
               className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-              id="expense-category"
+              id="saving-category"
             >
-              <option value="">Selecciona una categoría</option>
-              <option value="food">Comida</option>
-              <option value="transportation">Transporte</option>
+              <option value="">Sin categoría</option>
+              <option value="emergency">Fondo de Emergencia</option>
+              <option value="travel">Viajes</option>
               <option value="housing">Vivienda</option>
-              <option value="entertainment">Entretenimiento</option>
+              <option value="education">Educación</option>
+              <option value="health">Salud</option>
+              <option value="investment">Inversión</option>
               <option value="other">Otro</option>
             </select>
             {errors.category && <p className="text-error text-sm mt-1">{errors.category.message}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="saving-target">Meta ($)</label>
+              <input
+                {...register('target_amount')}
+                className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                id="saving-target"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="10000.00"
+              />
+              {errors.target_amount && <p className="text-error text-sm mt-1">{errors.target_amount.message}</p>}
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="saving-current">Ahorrado ($)</label>
+              <input
+                {...register('current_amount')}
+                className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                id="saving-current"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+              />
+              {errors.current_amount && <p className="text-error text-sm mt-1">{errors.current_amount.message}</p>}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="saving-deadline">Fecha límite</label>
+            <input
+              {...register('deadline')}
+              className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+              id="saving-deadline"
+              type="date"
+            />
+            {errors.deadline && <p className="text-error text-sm mt-1">{errors.deadline.message}</p>}
           </div>
 
           <div className="flex justify-end gap-3 pt-2">

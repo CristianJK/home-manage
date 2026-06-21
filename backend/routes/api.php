@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\PersonalExpenseController;
 use App\Http\Controllers\Api\SavingGoalController;
 use App\Http\Controllers\Api\SharedExpenseController;
+use App\Http\Controllers\Api\SharedExpensePercentageController;
+use App\Http\Controllers\Api\SharedExpensePaymentController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\GoogleController;
@@ -47,12 +49,25 @@ Route::prefix('saving-goals')->middleware('auth:sanctum')->group(function () {
     Route::delete('/{id}', [SavingGoalController::class, 'destroy']);
 });
 
-Route::prefix('shared-expense')->group(function () {
+Route::prefix('shared-expense')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [SharedExpenseController::class, 'index']);
     Route::post('/', [SharedExpenseController::class, 'store']);
     Route::get('/{id}', [SharedExpenseController::class, 'show']);
     Route::patch('/{id}', [SharedExpenseController::class, 'update']);
     Route::delete('/{id}', [SharedExpenseController::class, 'destroy']);
+});
+
+Route::prefix('shared-finances/percentages')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [SharedExpensePercentageController::class, 'index']);
+    Route::put('/', [SharedExpensePercentageController::class, 'update']);
+});
+
+Route::prefix('shared-finances/payments')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [SharedExpensePaymentController::class, 'index']);
+    Route::post('/', [SharedExpensePaymentController::class, 'store']);
+    Route::get('/{id}', [SharedExpensePaymentController::class, 'show']);
+    Route::patch('/{id}', [SharedExpensePaymentController::class, 'update']);
+    Route::delete('/{id}', [SharedExpensePaymentController::class, 'destroy']);
 });
 
 Route::prefix('task')->middleware('auth:sanctum')->group(function () {

@@ -1,17 +1,17 @@
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { savingGoalSchema } from '../schemas/savingGoal'
+import { taskSchema } from './taskSchema'
 
-export function SavingModal({ isOpen, onClose, onSubmit, defaultValues, title, serverError }) {
+export function TaskModal({ isOpen, onClose, onSubmit, defaultValues, title, serverError }) {
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm({
-    resolver: zodResolver(savingGoalSchema),
+    resolver: zodResolver(taskSchema),
     defaultValues: {
-      target_name: '',
-      category: '',
-      target_amount: '',
-      deadline: '',
-      current_amount: '',
+      title: '',
+      description: '',
+      status: 'pending',
+      frequency: '',
+      scheduled_at: '',
       ...defaultValues,
     },
   })
@@ -19,11 +19,11 @@ export function SavingModal({ isOpen, onClose, onSubmit, defaultValues, title, s
   useEffect(() => {
     if (isOpen) {
       reset({
-        target_name: '',
-        category: '',
-        target_amount: '',
-        deadline: '',
-        current_amount: '',
+        title: '',
+        description: '',
+        status: 'pending',
+        frequency: '',
+        scheduled_at: '',
         ...defaultValues,
       })
     }
@@ -65,74 +65,70 @@ export function SavingModal({ isOpen, onClose, onSubmit, defaultValues, title, s
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="saving-name">Nombre de la meta</label>
+            <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="task-title">Título</label>
             <input
-              {...register('target_name')}
+              {...register('title')}
               className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-              id="saving-name"
-              placeholder="Ej: Fondo de Emergencia"
+              id="task-title"
+              placeholder="Nombre de la tarea"
             />
-            {errors.target_name && <p className="text-error text-sm mt-1">{errors.target_name.message}</p>}
+            {errors.title && <p className="text-error text-sm mt-1">{errors.title.message}</p>}
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="saving-category">Categoría</label>
-            <select
-              {...register('category')}
-              className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-              id="saving-category"
-            >
-              <option value="">Sin categoría</option>
-              <option value="emergency">Fondo de Emergencia</option>
-              <option value="travel">Viajes</option>
-              <option value="housing">Vivienda</option>
-              <option value="education">Educación</option>
-              <option value="health">Salud</option>
-              <option value="investment">Inversión</option>
-              <option value="other">Otro</option>
-            </select>
-            {errors.category && <p className="text-error text-sm mt-1">{errors.category.message}</p>}
+            <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="task-description">Descripción</label>
+            <textarea
+              {...register('description')}
+              className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+              id="task-description"
+              rows={3}
+              placeholder="Descripción opcional"
+            />
+            {errors.description && <p className="text-error text-sm mt-1">{errors.description.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="saving-target">Meta ($)</label>
-              <input
-                {...register('target_amount')}
+              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="task-status">Estado</label>
+              <select
+                {...register('status')}
                 className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                id="saving-target"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="10000.00"
-              />
-              {errors.target_amount && <p className="text-error text-sm mt-1">{errors.target_amount.message}</p>}
+                id="task-status"
+              >
+                <option value="pending">Por hacer</option>
+                <option value="in_progress">En progreso</option>
+                <option value="completed">Completado</option>
+                <option value="cancelled">Cancelado</option>
+              </select>
+              {errors.status && <p className="text-error text-sm mt-1">{errors.status.message}</p>}
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="saving-current">Ahorrado ($)</label>
-              <input
-                {...register('current_amount')}
+              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="task-frequency">Frecuencia</label>
+              <select
+                {...register('frequency')}
                 className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                id="saving-current"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-              />
-              {errors.current_amount && <p className="text-error text-sm mt-1">{errors.current_amount.message}</p>}
+                id="task-frequency"
+              >
+                <option value="">Sin frecuencia</option>
+                <option value="daily">Diaria</option>
+                <option value="weekly">Semanal</option>
+                <option value="monthly">Mensual</option>
+                <option value="yearly">Anual</option>
+              </select>
+              {errors.frequency && <p className="text-error text-sm mt-1">{errors.frequency.message}</p>}
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="saving-deadline">Fecha límite</label>
+            <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="task-scheduled-at">Fecha programada</label>
             <input
-              {...register('deadline')}
+              {...register('scheduled_at')}
               className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-              id="saving-deadline"
+              id="task-scheduled-at"
               type="date"
             />
-            {errors.deadline && <p className="text-error text-sm mt-1">{errors.deadline.message}</p>}
+            {errors.scheduled_at && <p className="text-error text-sm mt-1">{errors.scheduled_at.message}</p>}
           </div>
 
           <div className="flex justify-end gap-3 pt-2">

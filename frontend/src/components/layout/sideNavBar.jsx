@@ -1,12 +1,17 @@
-import { NavLink } from 'react-router'
+import { NavLink } from "react-router";
 
 const navItems = [
-  { to: '/', icon: 'dashboard', label: 'Dashboard' },
-  { to: '/tasks', icon: 'assignment', label: 'Tasks' },
-  { to: '/shared-finances', icon: 'account_balance_wallet', label: 'Shared Finances' },
-  { to: '/savings', icon: 'savings', label: 'Savings' },
-  { to: '/calendar', icon: 'calendar_month', label: 'Logistics Calendar' },
-]
+  { to: "/", icon: "dashboard", label: "Dashboard" },
+  { to: "/tasks", icon: "assignment", label: "Tasks" },
+  {
+    to: "/shared-finances",
+    icon: "account_balance_wallet",
+    label: "Shared Finances",
+  },
+  { to: "/savings", icon: "savings", label: "Savings" },
+  { to: "/payments", icon: "payment", label: "Payments" },
+  { to: "/calendar", icon: "calendar_month", label: "Logistics Calendar" },
+];
 
 export function SideNavBar() {
   return (
@@ -24,8 +29,8 @@ export function SideNavBar() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-lg font-bold transition-all duration-200 ${
                 isActive
-                  ? 'bg-primary-light text-primary'
-                  : 'text-text-secondary hover:bg-surface-variant active:translate-x-1'
+                  ? "bg-primary-light text-primary"
+                  : "text-text-secondary hover:bg-surface-variant active:translate-x-1"
               }`
             }
           >
@@ -55,5 +60,5 @@ export function SideNavBar() {
         </NavLink>
       </div>
     </aside>
-  )
+  );
 }
