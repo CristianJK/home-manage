@@ -35,7 +35,10 @@ export default function TaskPage() {
     async (data) => {
       setServerError(null);
       const payload = Object.fromEntries(
-        Object.entries(data).map(([key, value]) => [key, value === "" ? null : value])
+        Object.entries(data).map(([key, value]) => [
+          key,
+          value === "" ? null : value,
+        ]),
       );
       try {
         if (editingTask) {
@@ -49,7 +52,7 @@ export default function TaskPage() {
         handleServerError(err, setServerError);
       }
     },
-    [editingTask, mutate, closeModal]
+    [editingTask, mutate, closeModal],
   );
 
   const handleDelete = useCallback(
@@ -62,12 +65,21 @@ export default function TaskPage() {
         console.error("Error deleting task:", err);
       }
     },
-    [mutate]
+    [mutate],
   );
 
-  const pending = useMemo(() => tasks.filter((t) => t.status === "pending"), [tasks]);
-  const inProgress = useMemo(() => tasks.filter((t) => t.status === "in_progress"), [tasks]);
-  const completed = useMemo(() => tasks.filter((t) => t.status === "completed"), [tasks]);
+  const pending = useMemo(
+    () => tasks.filter((t) => t.status === "pending").slice(0, 3),
+    [tasks, 3],
+  );
+  const inProgress = useMemo(
+    () => tasks.filter((t) => t.status === "in_progress").slice(0, 3),
+    [tasks, 3],
+  );
+  const completed = useMemo(
+    () => tasks.filter((t) => t.status === "completed").slice(0, 3),
+    [tasks, 3],
+  );
 
   return (
     <>
@@ -94,7 +106,9 @@ export default function TaskPage() {
       )}
 
       {tasks.length === 0 ? (
-        <div className="text-center py-12 text-text-secondary">Cargando tareas...</div>
+        <div className="text-center py-12 text-text-secondary">
+          Cargando tareas...
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex flex-col gap-4">
@@ -108,7 +122,12 @@ export default function TaskPage() {
             </div>
             <div className="flex flex-col gap-4">
               {pending.map((task) => (
-                <TaskCard key={task.id} task={task} onEdit={openEdit} onDelete={handleDelete} />
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onEdit={openEdit}
+                  onDelete={handleDelete}
+                />
               ))}
               <button
                 onClick={openCreate}
@@ -130,7 +149,13 @@ export default function TaskPage() {
             </div>
             <div className="flex flex-col gap-4">
               {inProgress.map((task) => (
-                <TaskCard key={task.id} task={task} variant="inProgress" onEdit={openEdit} onDelete={handleDelete} />
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  variant="inProgress"
+                  onEdit={openEdit}
+                  onDelete={handleDelete}
+                />
               ))}
             </div>
           </div>
@@ -146,7 +171,12 @@ export default function TaskPage() {
             </div>
             <div className="flex flex-col gap-4 opacity-60">
               {completed.map((task) => (
-                <TaskCard key={task.id} task={task} variant="completed" onDelete={handleDelete} />
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  variant="completed"
+                  onDelete={handleDelete}
+                />
               ))}
             </div>
           </div>
@@ -165,7 +195,9 @@ export default function TaskPage() {
                 description: editingTask.description || "",
                 status: editingTask.status,
                 frequency: editingTask.frequency || "",
-                scheduled_at: editingTask.scheduled_at ? editingTask.scheduled_at.slice(0, 10) : "",
+                scheduled_at: editingTask.scheduled_at
+                  ? editingTask.scheduled_at.slice(0, 10)
+                  : "",
               }
             : undefined
         }
