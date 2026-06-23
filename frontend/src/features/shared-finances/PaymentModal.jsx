@@ -10,7 +10,7 @@ export function PaymentModal({
   defaultValues,
   title,
   serverError,
-  users,
+  sharedExpenses,
 }) {
   const {
     register,
@@ -20,10 +20,11 @@ export function PaymentModal({
   } = useForm({
     resolver: zodResolver(sharedPaymentSchema),
     defaultValues: {
-      user_id: "",
+      shared_expense_id: "",
       amount: "",
       paid_at: new Date().toISOString().slice(0, 10),
       notes: "",
+      photo: "",
       ...defaultValues,
     },
   });
@@ -31,10 +32,11 @@ export function PaymentModal({
   useEffect(() => {
     if (isOpen) {
       reset({
-        user_id: "",
+        shared_expense_id: "",
         amount: "",
         paid_at: new Date().toISOString().slice(0, 10),
         notes: "",
+        photo: "",
         ...defaultValues,
       });
     }
@@ -84,27 +86,22 @@ export function PaymentModal({
           <div className="space-y-1">
             <label
               className="text-xs font-medium text-text-secondary uppercase tracking-wider"
-              htmlFor="payment-user"
+              htmlFor="payment-expense"
             >
-              Usuario
+              Gasto asociado
             </label>
             <select
-              {...register("user_id")}
+              {...register("shared_expense_id")}
               className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-              id="payment-user"
+              id="payment-expense"
             >
-              <option value="">Selecciona un usuario</option>
-              {users?.map((u) => (
-                <option key={u.user_id || u.id} value={u.user_id || u.id}>
-                  {u.name}
+              <option value="">Sin gasto asociado</option>
+              {sharedExpenses?.map((e) => (
+                <option key={e.id} value={String(e.id)}>
+                  {e.concept} — ${Number(e.amount).toLocaleString()}
                 </option>
               ))}
             </select>
-            {errors.user_id && (
-              <p className="text-error text-sm mt-1">
-                {errors.user_id.message}
-              </p>
-            )}
           </div>
 
           <div className="space-y-1">
@@ -163,6 +160,24 @@ export function PaymentModal({
             />
             {errors.notes && (
               <p className="text-error text-sm mt-1">{errors.notes.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <label
+              className="text-xs font-medium text-text-secondary uppercase tracking-wider"
+              htmlFor="payment-photo"
+            >
+              Foto del comprobante
+            </label>
+            <input
+              {...register("photo")}
+              className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+              id="payment-photo"
+              placeholder="URL de la imagen (opcional)"
+            />
+            {errors.photo && (
+              <p className="text-error text-sm mt-1">{errors.photo.message}</p>
             )}
           </div>
 

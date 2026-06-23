@@ -1,7 +1,8 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router";
+import { Routes, Route } from "react-router";
 import { Header } from "./components/layout/Header";
 import { SideNavBar } from "./components/layout/sideNavBar";
+import { AuthProvider } from "./context/AuthContext";
 import GuestRoute from "./features/auth/GuestRoute";
 import ProtectedRoute from "./features/auth/ProtectedRoute";
 

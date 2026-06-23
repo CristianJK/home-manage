@@ -21,8 +21,13 @@ export function PaymentTable({ payments, onEdit, onDelete }) {
               </span>
             </div>
             <div className="min-w-0">
-              <h4 className="text-base font-semibold truncate">
-                {payment.user?.name || "Usuario"}
+              <h4 className="text-base font-semibold truncate flex items-center gap-2">
+                {payment.shared_expense?.concept || "Pago general"}
+                {payment.photo && (
+                  <span className="material-symbols-outlined text-[16px] text-text-secondary" title="Ver comprobante">
+                    image
+                  </span>
+                )}
               </h4>
               <p className="text-xs font-medium text-text-secondary">
                 {new Date(payment.paid_at).toLocaleDateString("es-ES", {

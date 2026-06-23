@@ -7,7 +7,7 @@ import { PaymentModal } from "../features/shared-finances/PaymentModal";
 export default function PaymentsPage() {
   const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [sharedExpenses, setSharedExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
@@ -21,17 +21,17 @@ export default function PaymentsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const fetchUsers = useCallback(() => {
+  const fetchSharedExpenses = useCallback(() => {
     api
-      .get("/shared-finances/percentages")
-      .then((res) => setUsers(res.data?.users || []))
-      .catch((err) => console.error("Error fetching users:", err));
+      .get("/shared-finances")
+      .then((res) => setSharedExpenses(Array.isArray(res.data) ? res.data : []))
+      .catch((err) => console.error("Error fetching shared expenses:", err));
   }, []);
 
   useEffect(() => {
     fetchPayments();
-    fetchUsers();
-  }, [fetchPayments, fetchUsers]);
+    fetchSharedExpenses();
+  }, [fetchPayments, fetchSharedExpenses]);
 
   const openCreate = () => {
     setEditingPayment(null);
@@ -54,11 +54,14 @@ export default function PaymentsPage() {
   const handleSubmit = async (data) => {
     setServerError(null);
     const payload = {
-      user_id: Number(data.user_id),
       amount: Number(data.amount),
       paid_at: data.paid_at,
       notes: data.notes || null,
+      photo: data.photo || null,
     };
+    if (data.shared_expense_id) {
+      payload.shared_expense_id = Number(data.shared_expense_id);
+    }
     try {
       if (editingPayment) {
         const res = await api.patch(
@@ -120,7 +123,7 @@ export default function PaymentsPage() {
               </h1>
             </div>
             <p className="text-base text-text-secondary">
-              Registra los pagos que cada usuario ha realizado.
+              Tus pagos registrados en gastos compartidos.
             </p>
           </div>
           <button
@@ -158,14 +161,15 @@ export default function PaymentsPage() {
         onClose={closeModal}
         onSubmit={handleSubmit}
         serverError={modalOpen ? serverError : null}
-        users={users}
+        sharedExpenses={sharedExpenses}
         defaultValues={
           editingPayment
             ? {
-                user_id: String(editingPayment.user_id),
+                shared_expense_id: editingPayment.shared_expense_id ? String(editingPayment.shared_expense_id) : "",
                 amount: String(editingPayment.amount),
                 paid_at: editingPayment.paid_at?.slice(0, 10) || "",
                 notes: editingPayment.notes || "",
+                photo: editingPayment.photo || "",
               }
             : undefined
         }

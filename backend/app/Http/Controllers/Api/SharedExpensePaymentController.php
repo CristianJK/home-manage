@@ -10,7 +10,7 @@ class SharedExpensePaymentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = SharedExpensePayment::with('user');
+        $query = SharedExpensePayment::with(['user', 'sharedExpense'])->where('user_id', auth()->id());
 
         if ($request->query('month')) {
             $month = date('Y-m', strtotime($request->query('month')));
@@ -23,21 +23,23 @@ class SharedExpensePaymentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
             'shared_expense_id' => 'nullable|exists:shared_expenses,id',
             'amount' => 'required|numeric|min:0',
             'paid_at' => 'required|date',
             'notes' => 'nullable|string|max:255',
+            'photo' => 'nullable|string|max:2048',
         ]);
+
+        $validated['user_id'] = auth()->id();
 
         $payment = SharedExpensePayment::create($validated);
 
-        return response()->json($payment->load('user'), 201);
+        return response()->json($payment->load(['user', 'sharedExpense']), 201);
     }
 
     public function show(string $id)
     {
-        $payment = SharedExpensePayment::with('user')->findOrFail($id);
+        $payment = SharedExpensePayment::with(['user', 'sharedExpense'])->findOrFail($id);
         return response()->json($payment);
     }
 
@@ -46,16 +48,16 @@ class SharedExpensePaymentController extends Controller
         $payment = SharedExpensePayment::findOrFail($id);
 
         $validated = $request->validate([
-            'user_id' => 'sometimes|exists:users,id',
             'shared_expense_id' => 'nullable|exists:shared_expenses,id',
             'amount' => 'sometimes|numeric|min:0',
             'paid_at' => 'sometimes|date',
             'notes' => 'nullable|string|max:255',
+            'photo' => 'nullable|string|max:2048',
         ]);
 
         $payment->update($validated);
 
-        return response()->json($payment->load('user'));
+        return response()->json($payment->load(['user', 'sharedExpense']));
     }
 
     public function destroy(string $id)
