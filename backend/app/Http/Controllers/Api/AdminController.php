@@ -25,4 +25,13 @@ class AdminController extends Controller
 
         return response()->json($user->only(['id', 'name', 'email', 'role']));
     }
+
+    public function destroy(string $id)
+    {
+        $user = User::findOrFail($id);
+        $user->tokens()->delete();
+        $user->delete();
+
+        return response()->json(['message' => 'Usuario eliminado con éxito']);
+    }
 }

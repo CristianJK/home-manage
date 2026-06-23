@@ -1,8 +1,17 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router";
 import api from "../services/api";
 import { PaymentTable } from "../features/shared-finances/PaymentTable";
 import { PaymentModal } from "../features/shared-finances/PaymentModal";
+
+const conceptLabels = {
+  rent: "Renta",
+  water: "Agua",
+  electricity: "Electricidad",
+  internet: "Internet",
+  gas: "Gas",
+  other: "Otro",
+};
 
 export default function PaymentsPage() {
   const navigate = useNavigate();
@@ -12,6 +21,31 @@ export default function PaymentsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
   const [serverError, setServerError] = useState(null);
+  const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const filteredPayments = useMemo(() => {
+    let result = payments;
+    const q = search.trim().toLowerCase();
+    if (q) {
+      result = result.filter((p) => {
+        const concept = conceptLabels[p.shared_expense?.concept] ||
+          p.shared_expense?.concept ||
+          "Pago general";
+        return concept.toLowerCase().includes(q);
+      });
+    }
+    if (dateFrom) {
+      result = result.filter((p) => p.paid_at?.slice(0, 10) >= dateFrom);
+    }
+    if (dateTo) {
+      result = result.filter((p) => p.paid_at?.slice(0, 10) <= dateTo);
+    }
+    return result;
+  }, [payments, search, dateFrom, dateTo]);
+
+  const hasActiveFilters = search || dateFrom || dateTo;
 
   const fetchPayments = useCallback(() => {
     api
@@ -142,19 +176,66 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      <section className="bg-surface border border-outline rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-surface border border-outline rounded-xl overflow-hidden shadow-sm">
+        <div className="p-4 border-b border-outline flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-[18px]">
+              search
+            </span>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filtrar por nombre..."
+              className="w-full pl-9 pr-3 py-2 bg-surface-variant border border-outline rounded-lg text-sm text-text-primary placeholder:text-text-secondary/60 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+            />
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="px-3 py-2 bg-surface-variant border border-outline rounded-lg text-sm text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+              title="Desde"
+            />
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="px-3 py-2 bg-surface-variant border border-outline rounded-lg text-sm text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+              title="Hasta"
+            />
+            {hasActiveFilters && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setDateFrom("");
+                  setDateTo("");
+                }}
+                className="px-3 py-2 text-sm font-medium text-text-secondary border border-outline rounded-lg hover:bg-surface-variant transition-all"
+                title="Limpiar filtros"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            )}
+          </div>
+        </div>
         {loading ? (
           <div className="text-center py-12 text-text-secondary">
             Cargando pagos...
           </div>
+        ) : filteredPayments.length === 0 && hasActiveFilters ? (
+          <div className="text-center py-12 text-text-secondary text-sm">
+            No se encontraron pagos con los filtros aplicados.
+          </div>
         ) : (
           <PaymentTable
-            payments={payments}
+            payments={filteredPayments}
             onEdit={openEdit}
             onDelete={handleDelete}
           />
         )}
-      </section>
+      </div>
 
       <PaymentModal
         isOpen={modalOpen}

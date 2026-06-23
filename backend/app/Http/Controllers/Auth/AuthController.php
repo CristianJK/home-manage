@@ -84,4 +84,37 @@ class AuthController extends Controller
             'message' => 'Sesión cerrada con éxito'
         ]);
     }
+
+    /**
+     * Change the authenticated user's password.
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'string', 'current_password'],
+            'new_password' => ['required', 'string', 'confirmed', Password::defaults()],
+        ]);
+
+        $request->user()->update([
+            'password' => Hash::make($validated['new_password']),
+        ]);
+
+        return response()->json([
+            'message' => 'Contraseña actualizada con éxito'
+        ]);
+    }
+
+    /**
+     * Delete the authenticated user's account.
+     */
+    public function deleteAccount(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->tokens()->delete();
+        $user->delete();
+
+        return response()->json([
+            'message' => 'Cuenta eliminada con éxito'
+        ]);
+    }
 }
