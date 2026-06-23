@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { sharedPaymentSchema } from "./sharedPaymentSchema";
+import { SearchableExpenseSelect } from "./SearchableExpenseSelect";
 
 export function PaymentModal({
   isOpen,
@@ -15,6 +16,8 @@ export function PaymentModal({
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
     reset,
   } = useForm({
@@ -28,6 +31,8 @@ export function PaymentModal({
       ...defaultValues,
     },
   });
+
+  const selectedId = watch("shared_expense_id");
 
   useEffect(() => {
     if (isOpen) {
@@ -83,25 +88,17 @@ export function PaymentModal({
           className="space-y-4"
           noValidate
         >
+          <input type="hidden" {...register("shared_expense_id")} />
+
           <div className="space-y-1">
-            <label
-              className="text-xs font-medium text-text-secondary uppercase tracking-wider"
-              htmlFor="payment-expense"
-            >
+            <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">
               Gasto asociado
             </label>
-            <select
-              {...register("shared_expense_id")}
-              className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-              id="payment-expense"
-            >
-              <option value="">Sin gasto asociado</option>
-              {sharedExpenses?.map((e) => (
-                <option key={e.id} value={String(e.id)}>
-                  {e.concept} — ${Number(e.amount).toLocaleString()}
-                </option>
-              ))}
-            </select>
+            <SearchableExpenseSelect
+              value={selectedId}
+              onChange={(val) => setValue("shared_expense_id", val)}
+              expenses={sharedExpenses}
+            />
           </div>
 
           <div className="space-y-1">

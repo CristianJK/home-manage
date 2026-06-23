@@ -19,6 +19,27 @@ class SharedExpensePayment extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::saved(function (SharedExpensePayment $payment) {
+            $payment->syncExpenseStatus();
+        });
+
+        static::deleted(function (SharedExpensePayment $payment) {
+            $payment->syncExpenseStatus();
+        });
+    }
+
+    public function syncExpenseStatus(): void
+    {
+        $expense = $this->sharedExpense;
+        if (!$expense) return;
+
+        $totalPaid = $expense->payments()->sum('amount');
+        $expense->is_paid = $totalPaid >= $expense->amount;
+        $expense->saveQuietly();
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

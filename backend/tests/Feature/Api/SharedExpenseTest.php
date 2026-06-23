@@ -68,7 +68,7 @@ class SharedExpenseTest extends TestCase
         $response = $this->postJson('/api/shared-expense', []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['concept', 'amount', 'frequency', 'due_date', 'is_paid']);
+            ->assertJsonValidationErrors(['concept', 'amount', 'frequency', 'due_date']);
     }
 
     public function test_store_fails_with_negative_amount(): void
@@ -157,7 +157,7 @@ class SharedExpenseTest extends TestCase
         $response = $this->patchJson("/api/shared-expense/{$expense->id}", []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['concept', 'amount', 'frequency', 'due_date', 'is_paid']);
+            ->assertJsonValidationErrors(['concept', 'amount', 'frequency', 'due_date']);
     }
 
     public function test_update_returns_404_for_non_existent_expense(): void

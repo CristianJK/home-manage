@@ -92,19 +92,24 @@ export default function SharedFinancesPage() {
     setServerError(null);
   };
 
+  const isAdmin = user?.role === "admin";
+
   const handleSubmit = async (data) => {
     setServerError(null);
+    const mapped = Object.entries(data).map(([key, value]) => [
+      key,
+      key === "amount"
+        ? Number(value)
+        : key === "is_paid"
+          ? value === "1"
+          : value === ""
+            ? null
+            : value,
+    ]);
     const payload = Object.fromEntries(
-      Object.entries(data).map(([key, value]) => [
-        key,
-        key === "amount"
-          ? Number(value)
-          : key === "is_paid"
-            ? value === "1"
-            : value === ""
-              ? null
-              : value,
-      ]),
+      isAdmin
+        ? mapped
+        : mapped.filter(([key]) => key !== "is_paid"),
     );
     try {
       if (editingExpense) {
@@ -281,6 +286,7 @@ export default function SharedFinancesPage() {
         onClose={closeModal}
         onSubmit={handleSubmit}
         serverError={modalOpen ? serverError : null}
+        isAdmin={isAdmin}
         defaultValues={
           editingExpense
             ? {

@@ -28,16 +28,24 @@ class SharedExpenseController extends Controller
      */
     public function store(Request $request)
     {
-        $validate = $request->validate([
+        $rules = [
             'concept' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0',
             'frequency' => 'required|string|max:255',
             'due_date' => 'required|date|after_or_equal:today',
-            'is_paid' => 'required|boolean',
             'comment' => 'nullable|string|max:255',
-        ]);
+        ];
 
+        if ($request->user()->isAdmin()) {
+            $rules['is_paid'] = 'boolean';
+        }
+
+        $validate = $request->validate($rules);
         $validate['user_id'] = $request->user()->id;
+
+        if (!array_key_exists('is_paid', $validate)) {
+            $validate['is_paid'] = false;
+        }
 
         $sharedExpense = SharedExpense::create($validate);
 
@@ -58,18 +66,21 @@ class SharedExpenseController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        ////'concept', 'amount', 'frequency', 'due_date', 'is_paid', 'comment', 'user_id'
-        $validate = $request->validate([
+        $rules = [
             'concept' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0',
             'frequency' => 'required|string|max:255',
             'due_date' => 'required|date|after_or_equal:today',
-            'is_paid' => 'required|boolean',
             'comment' => 'nullable|string|max:255',
-        ]);
+        ];
+
+        if ($request->user()->isAdmin()) {
+            $rules['is_paid'] = 'required|boolean';
+        }
+
+        $validate = $request->validate($rules);
 
         $sharedExpense = SharedExpense::findOrFail($id);
-        $validate['user_id'] = $request->user()->id;
         $sharedExpense->update($validate);
 
         return response()->json($sharedExpense);

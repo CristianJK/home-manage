@@ -20,7 +20,7 @@ const frequencyOptions = [
   { value: 'semiannual', label: 'Semestral' },
 ]
 
-export function SharedExpenseModal({ isOpen, onClose, onSubmit, defaultValues, title, serverError }) {
+export function SharedExpenseModal({ isOpen, onClose, onSubmit, defaultValues, title, serverError, isAdmin }) {
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm({
     resolver: zodResolver(sharedExpenseSchema),
     defaultValues: {
@@ -145,7 +145,8 @@ export function SharedExpenseModal({ isOpen, onClose, onSubmit, defaultValues, t
               <label className="text-xs font-medium text-text-secondary uppercase tracking-wider" htmlFor="expense-status">Estado</label>
               <select
                 {...register('is_paid')}
-                className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                disabled={!isAdmin}
+                className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 id="expense-status"
               >
                 <option value="0">Pendiente</option>
