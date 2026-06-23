@@ -1,8 +1,5 @@
 export function SharedFinanceSummary({ totalMonth, balance, nextSettlement, onSettle }) {
-  const balanceColor = balance >= 0 ? 'text-primary' : 'text-error'
-  const balanceText = balance >= 0
-    ? 'Tienes saldo a favor'
-    : 'Debes liquidar con los demás'
+  const isPaidUp = balance <= 0
 
   return (
     <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -18,11 +15,11 @@ export function SharedFinanceSummary({ totalMonth, balance, nextSettlement, onSe
         <p className="text-xs font-medium text-text-secondary mb-1">
           Tu Balance
         </p>
-        <h2 className={`text-2xl font-bold ${balanceColor}`}>
-          {balance >= 0 ? '+' : ''}${Number(Math.abs(balance)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        <h2 className={`text-2xl font-bold ${isPaidUp ? 'text-emerald-600' : 'text-error'}`}>
+          {isPaidUp ? '$0' : `-$${Number(balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
         </h2>
         <p className="text-sm text-text-secondary mt-2">
-          {balanceText}
+          {isPaidUp ? 'Al día en tus pagos' : `Debes pagar $${Number(balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
         </p>
       </div>
       <div className="bg-surface border border-outline p-4 rounded-xl shadow-sm flex flex-col justify-between">

@@ -16,6 +16,13 @@ class SharedExpenseController extends Controller
         return response()->json(SharedExpense::all());
     }
 
+    public function withPayments()
+    {
+        return response()->json(
+            SharedExpense::with('payments.user')->latest('due_date')->get()
+        );
+    }
+
     /**
      * Store a newly created resource in storage.
      */

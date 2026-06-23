@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\SavingGoalController;
 use App\Http\Controllers\Api\SharedExpenseController;
 use App\Http\Controllers\Api\SharedExpensePercentageController;
 use App\Http\Controllers\Api\SharedExpensePaymentController;
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\GoogleController;
@@ -51,6 +52,7 @@ Route::prefix('saving-goals')->middleware('auth:sanctum')->group(function () {
 
 Route::prefix('shared-expense')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [SharedExpenseController::class, 'index']);
+    Route::get('/with-payments', [SharedExpenseController::class, 'withPayments']);
     Route::post('/', [SharedExpenseController::class, 'store']);
     Route::get('/{id}', [SharedExpenseController::class, 'show']);
     Route::patch('/{id}', [SharedExpenseController::class, 'update']);
@@ -76,4 +78,9 @@ Route::prefix('task')->middleware('auth:sanctum')->group(function () {
     Route::get('/{id}', [TaskController::class, 'show']);
     Route::patch('/{id}', [TaskController::class, 'update']);
     Route::delete('/{id}', [TaskController::class, 'destroy']);
+});
+
+Route::prefix('admin')->middleware(['auth:sanctum', 'is-admin'])->group(function () {
+    Route::get('/users', [AdminController::class, 'users']);
+    Route::patch('/users/{id}/role', [AdminController::class, 'updateRole']);
 });

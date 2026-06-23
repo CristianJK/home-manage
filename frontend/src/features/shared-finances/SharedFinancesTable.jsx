@@ -19,6 +19,7 @@ export function SharedFinancesTable({
   sharedFinances,
   onEdit,
   onDelete,
+  onViewAll,
   maxRows,
 }) {
   const displayed = maxRows ? sharedFinances.slice(0, maxRows) : sharedFinances;
@@ -146,7 +147,10 @@ export function SharedFinancesTable({
         </tbody>
       </table>
       <div className="p-4 bg-surface border-t border-outline flex justify-center">
-        <button className="text-primary text-xs font-medium flex items-center gap-1 hover:underline">
+        <button
+          onClick={onViewAll}
+          className="text-primary text-xs font-medium flex items-center gap-1 hover:underline"
+        >
           Ver todos los movimientos
           <span className="material-symbols-outlined text-[16px]">
             chevron_right

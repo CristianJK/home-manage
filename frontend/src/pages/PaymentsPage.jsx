@@ -23,7 +23,7 @@ export default function PaymentsPage() {
 
   const fetchSharedExpenses = useCallback(() => {
     api
-      .get("/shared-finances")
+      .get("/shared-expense")
       .then((res) => setSharedExpenses(Array.isArray(res.data) ? res.data : []))
       .catch((err) => console.error("Error fetching shared expenses:", err));
   }, []);
@@ -165,7 +165,9 @@ export default function PaymentsPage() {
         defaultValues={
           editingPayment
             ? {
-                shared_expense_id: editingPayment.shared_expense_id ? String(editingPayment.shared_expense_id) : "",
+                shared_expense_id: editingPayment.shared_expense_id
+                  ? String(editingPayment.shared_expense_id)
+                  : "",
                 amount: String(editingPayment.amount),
                 paid_at: editingPayment.paid_at?.slice(0, 10) || "",
                 notes: editingPayment.notes || "",
