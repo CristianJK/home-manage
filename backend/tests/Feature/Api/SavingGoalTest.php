@@ -110,14 +110,11 @@ class SavingGoalTest extends TestCase
             ->assertJsonFragment(['id' => $goal->id]);
     }
 
-    public function test_show_returns_null_for_non_existent_goal(): void
+    public function test_show_returns_404_for_non_existent_goal(): void
     {
         $response = $this->getJson('/api/saving-goals/99999');
 
-        // SavingGoalController::show uses find() not findOrFail(), so it returns null
-        // In Laravel 13, response()->json(null) serializes to {} instead of null
-        $response->assertOk();
-        $this->assertSame('{}', $response->getContent());
+        $response->assertStatus(404);
     }
 
     // ─── UPDATE ───────────────────────────────────────────────────────

@@ -112,7 +112,7 @@ class PersonalExpenseTest extends TestCase
         $payload = [
             'concept' => 'Updated Concept',
             'amount' => 200.00,
-            'category' => 'transportation',
+            'category' => 'transport',
         ];
 
         $response = $this->patchJson("/api/personal-expense/{$expense->id}", $payload);

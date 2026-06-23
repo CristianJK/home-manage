@@ -1,32 +1,35 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateRoleRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Http\JsonResponse;
 
-class AdminController extends Controller
+final class AdminController extends Controller
 {
     public function users()
     {
-        return response()->json(User::all(['id', 'name', 'email', 'salary', 'role', 'created_at']));
+        return UserResource::collection(
+            User::all(['id', 'name', 'email', 'salary', 'role', 'created_at'])
+        );
     }
 
-    public function updateRole(Request $request, string $id)
+    public function updateRole(UpdateRoleRequest $request, string $id): JsonResponse
     {
-        $validated = $request->validate([
-            'role' => ['required', Rule::in(['user', 'admin'])],
-        ]);
-
         $user = User::findOrFail($id);
-        $user->update(['role' => $validated['role']]);
+        $user->update(['role' => $request->validated('role')]);
 
-        return response()->json($user->only(['id', 'name', 'email', 'role']));
+        return response()->json(
+            (new UserResource($user))->toArray($request)
+        );
     }
 
-    public function destroy(string $id)
+    public function destroy(string $id): JsonResponse
     {
         $user = User::findOrFail($id);
         $user->tokens()->delete();

@@ -15,7 +15,7 @@
 |---|---|
 | `composer setup` | Full first-time setup (install, `.env`, key, migrate, npm build) |
 | `composer dev` | Runs `php artisan serve` + queue:listen + pail(logs) + vite concurrently |
-| `composer test` | Runs `php artisan config:clear && php artisan test` |
+| `docker compose exec app composer test` | Runs tests inside Docker container |
 
 ### Frontend (run from `frontend/`)
 

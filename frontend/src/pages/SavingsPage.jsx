@@ -1,157 +1,128 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router'
-import api from '../services/api'
-import { SavingCard } from '../features/savings/SavingCard'
-import { SavingModal } from '../features/savings/SavingModal'
-import { PersonalExpenseTable } from '../features/savings/PersonalExpenseTable'
-import { PersonalExpenseModal } from '../features/savings/PersonalExpenseModal'
+import { useState, useCallback } from "react";
+import { useNavigate } from "react-router";
+import useSWR from "swr";
+import api from "../services/api";
+import { SavingCard } from "../features/savings/SavingCard";
+import { SavingModal } from "../features/savings/SavingModal";
+import { PersonalExpenseTable } from "../features/savings/PersonalExpenseTable";
+import { PersonalExpenseModal } from "../features/savings/PersonalExpenseModal";
+import { buildPayload } from "../lib/payload";
+import { handleServerError } from "../lib/errors";
+
+const fetcher = (url) => api.get(url).then((res) => res.data);
 
 export default function SavingsPage() {
-  const [savings, setSavings] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editingSaving, setEditingSaving] = useState(null)
-  const [serverError, setServerError] = useState(null)
+  const navigate = useNavigate();
+  const { data: savings = [], mutate: mutateSavings } = useSWR("/saving-goals", fetcher);
+  const { data: expenses = [], mutate: mutateExpenses } = useSWR("/personal-expense", fetcher);
 
-  const [expenses, setExpenses] = useState([])
-  const [expenseModalOpen, setExpenseModalOpen] = useState(false)
-  const [editingExpense, setEditingExpense] = useState(null)
-  const [expenseServerError, setExpenseServerError] = useState(null)
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingSaving, setEditingSaving] = useState(null);
+  const [serverError, setServerError] = useState(null);
 
-  const navigate = useNavigate()
+  const [expenseModalOpen, setExpenseModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [expenseServerError, setExpenseServerError] = useState(null);
 
-  const fetchExpenses = useCallback(() => {
-    api.get('/personal-expense')
-      .then(res => setExpenses(Array.isArray(res.data) ? res.data : []))
-      .catch(err => console.error('Error fetching expenses:', err))
-  }, [])
+  const openCreate = useCallback(() => {
+    setEditingSaving(null);
+    setServerError(null);
+    setModalOpen(true);
+  }, []);
 
-  const fetchSavings = useCallback(() => {
-    api.get('/saving-goals')
-      .then(res => setSavings(Array.isArray(res.data) ? res.data : []))
-      .catch(err => console.error('Error fetching savings:', err))
-      .finally(() => setLoading(false))
-  }, [])
+  const openEdit = useCallback((saving) => {
+    setEditingSaving(saving);
+    setServerError(null);
+    setModalOpen(true);
+  }, []);
 
-  useEffect(() => { fetchSavings(); fetchExpenses() }, [fetchSavings, fetchExpenses])
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+    setEditingSaving(null);
+    setServerError(null);
+  }, []);
 
-  const openCreate = () => {
-    setEditingSaving(null)
-    setServerError(null)
-    setModalOpen(true)
-  }
-
-  const openEdit = (saving) => {
-    setEditingSaving(saving)
-    setServerError(null)
-    setModalOpen(true)
-  }
-
-  const closeModal = () => {
-    setModalOpen(false)
-    setEditingSaving(null)
-    setServerError(null)
-  }
-
-  const handleSubmit = async (data) => {
-    setServerError(null)
-    const payload = Object.fromEntries(
-      Object.entries(data).map(([key, value]) => [
-        key,
-        value === '' ? null : key === 'target_amount' || key === 'current_amount' ? Number(value) : value,
-      ]),
-    )
-    try {
-      if (editingSaving) {
-        const res = await api.patch(`/saving-goals/${editingSaving.id}`, payload)
-        setSavings(prev => prev.map(s => s.id === editingSaving.id ? res.data : s))
-      } else {
-        const res = await api.post('/saving-goals', payload)
-        setSavings(prev => [...prev, res.data])
-      }
-      closeModal()
-    } catch (err) {
-      if (err.response?.status === 422) {
-        const fields = err.response.data?.errors
-        if (fields) {
-          setServerError(Object.values(fields).flat().join('\n'))
+  const handleSubmit = useCallback(
+    async (data) => {
+      setServerError(null);
+      const payload = buildPayload(data, ["target_amount", "current_amount"]);
+      try {
+        if (editingSaving) {
+          await api.patch(`/saving-goals/${editingSaving.id}`, payload);
         } else {
-          setServerError('Error de validación. Revisa los campos.')
+          await api.post("/saving-goals", payload);
         }
-      } else {
-        setServerError('Error al guardar la meta. Intenta de nuevo.')
+        mutateSavings();
+        closeModal();
+      } catch (err) {
+        handleServerError(err, setServerError);
       }
-    }
-  }
+    },
+    [editingSaving, mutateSavings, closeModal]
+  );
 
-  const openCreateExpense = () => {
-    setEditingExpense(null)
-    setExpenseServerError(null)
-    setExpenseModalOpen(true)
-  }
-
-  const openEditExpense = (expense) => {
-    setEditingExpense(expense)
-    setExpenseServerError(null)
-    setExpenseModalOpen(true)
-  }
-
-  const closeExpenseModal = () => {
-    setExpenseModalOpen(false)
-    setEditingExpense(null)
-    setExpenseServerError(null)
-  }
-
-  const handleExpenseSubmit = async (data) => {
-    setExpenseServerError(null)
-    const payload = Object.fromEntries(
-      Object.entries(data).map(([key, value]) => [
-        key,
-        key === 'amount' ? Number(value) : value,
-      ]),
-    )
-    try {
-      if (editingExpense) {
-        const res = await api.patch(`/personal-expense/${editingExpense.id}`, payload)
-        setExpenses(prev => prev.map(e => e.id === editingExpense.id ? res.data : e))
-      } else {
-        const res = await api.post('/personal-expense', payload)
-        setExpenses(prev => [...prev, res.data])
+  const handleDelete = useCallback(
+    async (saving) => {
+      if (!window.confirm(`¿Eliminar "${saving.target_name}"?`)) return;
+      try {
+        await api.delete(`/saving-goals/${saving.id}`);
+        mutateSavings();
+      } catch (err) {
+        console.error("Error deleting saving goal:", err);
       }
-      closeExpenseModal()
-    } catch (err) {
-      if (err.response?.status === 422) {
-        const fields = err.response.data?.errors
-        if (fields) {
-          setExpenseServerError(Object.values(fields).flat().join('\n'))
+    },
+    [mutateSavings]
+  );
+
+  const openCreateExpense = useCallback(() => {
+    setEditingExpense(null);
+    setExpenseServerError(null);
+    setExpenseModalOpen(true);
+  }, []);
+
+  const openEditExpense = useCallback((expense) => {
+    setEditingExpense(expense);
+    setExpenseServerError(null);
+    setExpenseModalOpen(true);
+  }, []);
+
+  const closeExpenseModal = useCallback(() => {
+    setExpenseModalOpen(false);
+    setEditingExpense(null);
+    setExpenseServerError(null);
+  }, []);
+
+  const handleExpenseSubmit = useCallback(
+    async (data) => {
+      setExpenseServerError(null);
+      const payload = buildPayload(data, ["amount"]);
+      try {
+        if (editingExpense) {
+          await api.patch(`/personal-expense/${editingExpense.id}`, payload);
         } else {
-          setExpenseServerError('Error de validación. Revisa los campos.')
+          await api.post("/personal-expense", payload);
         }
-      } else {
-        setExpenseServerError('Error al guardar el gasto. Intenta de nuevo.')
+        mutateExpenses();
+        closeExpenseModal();
+      } catch (err) {
+        handleServerError(err, setExpenseServerError);
       }
-    }
-  }
+    },
+    [editingExpense, mutateExpenses, closeExpenseModal]
+  );
 
-  const handleExpenseDelete = async (expense) => {
-    if (!window.confirm(`¿Eliminar "${expense.concept}"?`)) return
-    try {
-      await api.delete(`/personal-expense/${expense.id}`)
-      setExpenses(prev => prev.filter(e => e.id !== expense.id))
-    } catch (err) {
-      console.error('Error deleting expense:', err)
-    }
-  }
-
-  const handleDelete = async (saving) => {
-    if (!window.confirm(`¿Eliminar "${saving.target_name}"?`)) return
-    try {
-      await api.delete(`/saving-goals/${saving.id}`)
-      setSavings(prev => prev.filter(s => s.id !== saving.id))
-    } catch (err) {
-      console.error('Error deleting saving goal:', err)
-    }
-  }
+  const handleExpenseDelete = useCallback(
+    async (expense) => {
+      if (!window.confirm(`¿Eliminar "${expense.concept}"?`)) return;
+      try {
+        await api.delete(`/personal-expense/${expense.id}`);
+        mutateExpenses();
+      } catch (err) {
+        console.error("Error deleting expense:", err);
+      }
+    },
+    [mutateExpenses]
+  );
 
   return (
     <>
@@ -181,17 +152,13 @@ export default function SavingsPage() {
         </div>
       )}
 
-      {loading ? (
-        <div className="text-center py-12 text-text-secondary">
-          Cargando metas de ahorro...
-        </div>
-      ) : savings.length === 0 ? (
+      {savings.length === 0 ? (
         <div className="text-center py-12 text-text-secondary">
           No hay metas de ahorro aún. Crea una para comenzar.
         </div>
       ) : (
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          {savings.map(s => (
+          {savings.map((s) => (
             <SavingCard key={s.id} saving={s} onEdit={openEdit} onDelete={handleDelete} />
           ))}
         </section>
@@ -219,7 +186,7 @@ export default function SavingsPage() {
         />
         <div className="p-4 bg-surface-variant/20 flex justify-center">
           <button
-            onClick={() => navigate('/savings/expenses')}
+            onClick={() => navigate("/savings/expenses")}
             className="text-xs font-medium text-text-secondary hover:text-primary transition-colors flex items-center gap-2"
           >
             Ver todos los gastos
@@ -255,14 +222,14 @@ export default function SavingsPage() {
           editingSaving
             ? {
                 target_name: editingSaving.target_name,
-                category: editingSaving.category || '',
+                category: editingSaving.category || "",
                 target_amount: String(editingSaving.target_amount),
-                deadline: editingSaving.deadline ? editingSaving.deadline.slice(0, 10) : '',
-                current_amount: String(editingSaving.current_amount || ''),
+                deadline: editingSaving.deadline ? editingSaving.deadline.slice(0, 10) : "",
+                current_amount: String(editingSaving.current_amount || ""),
               }
             : undefined
         }
-        title={editingSaving ? 'Editar meta de ahorro' : 'Nueva meta de ahorro'}
+        title={editingSaving ? "Editar meta de ahorro" : "Nueva meta de ahorro"}
       />
 
       <PersonalExpenseModal
@@ -279,8 +246,8 @@ export default function SavingsPage() {
               }
             : undefined
         }
-        title={editingExpense ? 'Editar gasto' : 'Nuevo gasto'}
+        title={editingExpense ? "Editar gasto" : "Nuevo gasto"}
       />
     </>
-  )
+  );
 }

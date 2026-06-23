@@ -1,8 +1,11 @@
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { sharedPaymentSchema } from "./sharedPaymentSchema";
 import { SearchableExpenseSelect } from "./SearchableExpenseSelect";
+import { Modal } from "../../components/ui/Modal";
+import { Input } from "../../components/ui/Input";
+import { Button } from "../../components/ui/Button";
 
 export function PaymentModal({
   isOpen,
@@ -17,7 +20,7 @@ export function PaymentModal({
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
     reset,
   } = useForm({
@@ -32,7 +35,7 @@ export function PaymentModal({
     },
   });
 
-  const selectedId = watch("shared_expense_id");
+  const selectedId = useWatch({ name: "shared_expense_id", control });
 
   useEffect(() => {
     if (isOpen) {
@@ -47,177 +50,23 @@ export function PaymentModal({
     }
   }, [isOpen, defaultValues, reset]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-text-primary">{title}</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="material-symbols-outlined text-text-secondary hover:text-text-primary transition-colors"
-          >
-            close
-          </button>
+    <Modal isOpen={isOpen} onClose={onClose} title={title} serverError={serverError}>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <input type="hidden" {...register("shared_expense_id")} />
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Gasto asociado</label>
+          <SearchableExpenseSelect value={selectedId} onChange={(val) => setValue("shared_expense_id", val)} expenses={sharedExpenses} />
         </div>
-
-        {serverError && (
-          <div className="bg-error-bg border border-error-border text-error-text text-sm rounded-lg p-3 whitespace-pre-line">
-            {serverError}
-          </div>
-        )}
-
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="space-y-4"
-          noValidate
-        >
-          <input type="hidden" {...register("shared_expense_id")} />
-
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">
-              Gasto asociado
-            </label>
-            <SearchableExpenseSelect
-              value={selectedId}
-              onChange={(val) => setValue("shared_expense_id", val)}
-              expenses={sharedExpenses}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label
-              className="text-xs font-medium text-text-secondary uppercase tracking-wider"
-              htmlFor="payment-amount"
-            >
-              Monto ($)
-            </label>
-            <input
-              {...register("amount")}
-              className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-              id="payment-amount"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="150.00"
-            />
-            {errors.amount && (
-              <p className="text-error text-sm mt-1">{errors.amount.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <label
-              className="text-xs font-medium text-text-secondary uppercase tracking-wider"
-              htmlFor="payment-date"
-            >
-              Fecha
-            </label>
-            <input
-              {...register("paid_at")}
-              className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-              id="payment-date"
-              type="date"
-            />
-            {errors.paid_at && (
-              <p className="text-error text-sm mt-1">
-                {errors.paid_at.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <label
-              className="text-xs font-medium text-text-secondary uppercase tracking-wider"
-              htmlFor="payment-notes"
-            >
-              Notas
-            </label>
-            <input
-              {...register("notes")}
-              className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-              id="payment-notes"
-              placeholder="Opcional"
-            />
-            {errors.notes && (
-              <p className="text-error text-sm mt-1">{errors.notes.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <label
-              className="text-xs font-medium text-text-secondary uppercase tracking-wider"
-              htmlFor="payment-photo"
-            >
-              Foto del comprobante
-            </label>
-            <input
-              {...register("photo")}
-              className="w-full px-4 py-3 bg-surface border border-outline rounded-lg text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-              id="payment-photo"
-              placeholder="URL de la imagen (opcional)"
-            />
-            {errors.photo && (
-              <p className="text-error text-sm mt-1">{errors.photo.message}</p>
-            )}
-          </div>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 text-sm font-medium text-text-secondary border border-outline rounded-lg hover:bg-surface-variant transition-all"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-5 py-2.5 text-sm font-medium bg-primary text-on-primary rounded-lg hover:bg-primary-hover disabled:opacity-50 transition-all flex items-center gap-2"
-            >
-              {isSubmitting && (
-                <svg
-                  className="animate-spin h-4 w-4 text-on-primary"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-              )}
-              {isSubmitting ? "Guardando..." : "Guardar"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <Input label="Monto ($)" error={errors.amount?.message} id="payment-amount" type="number" step="0.01" min="0" placeholder="150.00" {...register("amount")} />
+        <Input label="Fecha" error={errors.paid_at?.message} id="payment-date" type="date" {...register("paid_at")} />
+        <Input label="Notas" error={errors.notes?.message} id="payment-notes" placeholder="Opcional" {...register("notes")} />
+        <Input label="Foto del comprobante" error={errors.photo?.message} id="payment-photo" placeholder="URL de la imagen (opcional)" {...register("photo")} />
+        <div className="flex justify-end gap-3 pt-2">
+          <Button variant="secondary" type="button" onClick={onClose}>Cancelar</Button>
+          <Button type="submit" loading={isSubmitting}>{isSubmitting ? "Guardando..." : "Guardar"}</Button>
+        </div>
+      </form>
+    </Modal>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 
 const conceptConfig = {
   rent: { icon: "home", label: "Renta" },
@@ -40,10 +40,13 @@ export function SearchableExpenseSelect({ value, onChange, expenses }) {
     );
   }, [expenses, search]);
 
+  const close = useCallback(() => {
+    setOpen(false);
+    setSearch("");
+  }, []);
+
   useEffect(() => {
-    if (!open) {
-      setSearch("");
-    } else {
+    if (open) {
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);
@@ -52,23 +55,23 @@ export function SearchableExpenseSelect({ value, onChange, expenses }) {
     if (!open) return;
     const handler = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setOpen(false);
+        close();
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  }, [open, close]);
 
   const selectItem = (id) => {
     onChange(id);
-    setOpen(false);
+    close();
   };
 
   return (
     <div className="relative" ref={containerRef}>
       <button
         type="button"
-        onClick={() => setOpen((p) => !p)}
+        onClick={() => open ? close() : setOpen(true)}
         className="w-full flex items-center gap-3 px-4 py-3 bg-surface border border-outline rounded-lg text-left focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
       >
         {selectedExpense ? (

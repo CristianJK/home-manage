@@ -1,88 +1,57 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreSavingGoalRequest;
+use App\Http\Requests\UpdateSavingGoalRequest;
+use App\Http\Resources\SavingGoalResource;
 use App\Models\SavingGoal;
+use App\Services\SavingGoalService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class SavingGoalController extends Controller
+final class SavingGoalController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public function __construct(
+        private readonly SavingGoalService $savingGoalService,
+    ) {}
+
     public function index(Request $request)
     {
-        $user = $request->user();
-        if (!$user) {
-            return response()->json(['message' => 'No autenticado'], 401);
-        }
-        $savingGoal =$user->savingGoals()->get();
-        return response()->json($savingGoal);
+        return SavingGoalResource::collection(
+            $request->user()->savingGoals()->latest()->get()
+        );
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(StoreSavingGoalRequest $request): JsonResponse
     {
-        //'user_id', 'target_name', 'target_amount', 'deadline', 'current_amount'
-        $validated = $request->validate([
-            'target_name' => 'required|string',
-            'category' => 'nullable|string|max:255',
-            'target_amount' => 'required|numeric',
-            'deadline' => 'required|date',
-            'current_amount' => 'nullable|numeric',
-        ]);
+        $goal = $this->savingGoalService->create(
+            $request->user(),
+            $request->toDto(),
+        );
 
-        $goal = $request->user()->savingGoals()->create($validated);
-        return response()->json($goal, 201);
+        return (new SavingGoalResource($goal))
+            ->response()
+            ->setStatusCode(201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(SavingGoal $savingGoal): SavingGoalResource
     {
-        $goal = SavingGoal::find($id);
-        return response()->json($goal);
+        return new SavingGoalResource($savingGoal);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(UpdateSavingGoalRequest $request, SavingGoal $savingGoal): SavingGoalResource
     {
-        //'user_id', 'target_name', 'target_amount', 'deadline', 'current_amount'
-        $validate = $request->validate([
-            'target_name' => 'required|string',
-            'category' => 'nullable|string|max:255',
-            'target_amount' => 'required|numeric',
-            'deadline' => 'required|date',
-            'current_amount' => 'nullable|numeric',
-        ]);
-
-        $savingGoal = SavingGoal::findOrFail($id);
-        $savingGoal->update($validate);
-        return response()->json($savingGoal);
+        $goal = $this->savingGoalService->update($savingGoal, $request->toDto());
+        return new SavingGoalResource($goal);
     }
 
-    public function updateProgress(Request $request, SavingGoal $savingGoal)
+    public function destroy(SavingGoal $savingGoal): JsonResponse
     {
-        $request->validate(['amount' => 'required|numeric']);
-
-        $savingGoal->increment('current_amount', $request->amount);
-
-        return response()->json($savingGoal);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        $savingGoal = SavingGoal::findOrFail($id);
-        $savingGoal->delete();
+        $this->savingGoalService->delete($savingGoal);
         return response()->json($savingGoal);
     }
 }

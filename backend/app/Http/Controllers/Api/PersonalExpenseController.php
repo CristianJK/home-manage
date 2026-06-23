@@ -1,70 +1,66 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePersonalExpenseRequest;
+use App\Http\Requests\UpdatePersonalExpenseRequest;
+use App\Http\Resources\PersonalExpenseResource;
 use App\Models\PersonalExpense;
+use App\Services\PersonalExpenseService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class PersonalExpenseController extends Controller
+final class PersonalExpenseController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public function __construct(
+        private readonly PersonalExpenseService $expenseService,
+    ) {}
+
     public function index(Request $request)
     {
-        return response()->json($request->user()->personalExpense);
+        return PersonalExpenseResource::collection(
+            $request->user()->personalExpense()->latest()->get()
+        );
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(StorePersonalExpenseRequest $request): JsonResponse
     {
-        //'user_id', 'concept', 'amount', 'category'
-        $validated = $request->validate([
-            'concept' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'category' => 'required|string'
-        ]);
+        $expense = $this->expenseService->create(
+            $request->user(),
+            $request->toDto(),
+        );
 
-        $expense = $request->user()->personalExpense()->create($validated);
-
-        return response()->json($expense, 201);
+        return (new PersonalExpenseResource($expense))
+            ->response()
+            ->setStatusCode(201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(PersonalExpense $expense): PersonalExpenseResource
     {
-        $expense = PersonalExpense::findOrFail($id);
-        return response()->json($expense);
+        if ($expense->user_id !== auth()->id()) {
+            abort(403);
+        }
+        return new PersonalExpenseResource($expense);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(UpdatePersonalExpenseRequest $request, PersonalExpense $expense): PersonalExpenseResource
     {
-        $validate = $request->validate([
-            'concept' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'category' => 'required|string'
-        ]);
-
-        $expense = PersonalExpense::findOrFail($id);
-        $expense->update($validate);
-        return response()->json($expense);
+        if ($expense->user_id !== auth()->id()) {
+            abort(403);
+        }
+        $expense = $this->expenseService->update($expense, $request->toDto());
+        return new PersonalExpenseResource($expense);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(PersonalExpense $expense): JsonResponse
     {
-        $expense = PersonalExpense::findOrFail($id);
-        $expense->delete();
+        if ($expense->user_id !== auth()->id()) {
+            abort(403);
+        }
+        $this->expenseService->delete($expense);
         return response()->json(null, 204);
     }
 }

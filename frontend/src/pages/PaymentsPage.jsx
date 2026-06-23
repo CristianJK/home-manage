@@ -1,8 +1,13 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
+import useSWR from "swr";
 import api from "../services/api";
 import { PaymentTable } from "../features/shared-finances/PaymentTable";
 import { PaymentModal } from "../features/shared-finances/PaymentModal";
+import { formatCurrency } from "../lib/helpers";
+import { handleServerError } from "../lib/errors";
+
+const fetcher = (url) => api.get(url).then((res) => res.data);
 
 const conceptLabels = {
   rent: "Renta",
@@ -15,9 +20,8 @@ const conceptLabels = {
 
 export default function PaymentsPage() {
   const navigate = useNavigate();
-  const [payments, setPayments] = useState([]);
-  const [sharedExpenses, setSharedExpenses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: payments = [], mutate, isLoading } = useSWR("/shared-finances/payments", fetcher);
+  const { data: sharedExpenses = [] } = useSWR("/shared-expense", fetcher);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
   const [serverError, setServerError] = useState(null);
@@ -30,114 +34,66 @@ export default function PaymentsPage() {
     const q = search.trim().toLowerCase();
     if (q) {
       result = result.filter((p) => {
-        const concept = conceptLabels[p.shared_expense?.concept] ||
+        const concept =
+          conceptLabels[p.shared_expense?.concept] ||
           p.shared_expense?.concept ||
           "Pago general";
         return concept.toLowerCase().includes(q);
       });
     }
-    if (dateFrom) {
-      result = result.filter((p) => p.paid_at?.slice(0, 10) >= dateFrom);
-    }
-    if (dateTo) {
-      result = result.filter((p) => p.paid_at?.slice(0, 10) <= dateTo);
-    }
+    if (dateFrom) result = result.filter((p) => p.paid_at?.slice(0, 10) >= dateFrom);
+    if (dateTo) result = result.filter((p) => p.paid_at?.slice(0, 10) <= dateTo);
     return result;
   }, [payments, search, dateFrom, dateTo]);
 
   const hasActiveFilters = search || dateFrom || dateTo;
 
-  const fetchPayments = useCallback(() => {
-    api
-      .get("/shared-finances/payments")
-      .then((res) => setPayments(Array.isArray(res.data) ? res.data : []))
-      .catch((err) => console.error("Error fetching payments:", err))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const fetchSharedExpenses = useCallback(() => {
-    api
-      .get("/shared-expense")
-      .then((res) => setSharedExpenses(Array.isArray(res.data) ? res.data : []))
-      .catch((err) => console.error("Error fetching shared expenses:", err));
-  }, []);
-
-  useEffect(() => {
-    fetchPayments();
-    fetchSharedExpenses();
-  }, [fetchPayments, fetchSharedExpenses]);
-
-  const openCreate = () => {
+  const openCreate = useCallback(() => {
     setEditingPayment(null);
     setServerError(null);
     setModalOpen(true);
-  };
+  }, []);
 
-  const openEdit = (payment) => {
+  const openEdit = useCallback((payment) => {
     setEditingPayment(payment);
     setServerError(null);
     setModalOpen(true);
-  };
+  }, []);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setModalOpen(false);
     setEditingPayment(null);
     setServerError(null);
-  };
+  }, []);
 
-  const handleSubmit = async (data) => {
-    setServerError(null);
-    const payload = {
-      amount: Number(data.amount),
-      paid_at: data.paid_at,
-      notes: data.notes || null,
-      photo: data.photo || null,
-    };
-    if (data.shared_expense_id) {
-      payload.shared_expense_id = Number(data.shared_expense_id);
-    }
-    try {
-      if (editingPayment) {
-        const res = await api.patch(
-          `/shared-finances/payments/${editingPayment.id}`,
-          payload,
-        );
-        setPayments((prev) =>
-          prev.map((p) => (p.id === editingPayment.id ? res.data : p)),
-        );
-      } else {
-        const res = await api.post("/shared-finances/payments", payload);
-        setPayments((prev) => [...prev, res.data]);
-      }
-      closeModal();
-    } catch (err) {
-      if (err.response?.status === 422) {
-        const fields = err.response.data?.errors;
-        if (fields) {
-          setServerError(Object.values(fields).flat().join("\n"));
+  const handleSubmit = useCallback(
+    async (data) => {
+      setServerError(null);
+      const payload = { ...data, shared_expense_id: data.shared_expense_id ? Number(data.shared_expense_id) : undefined };
+      try {
+        if (editingPayment) {
+          await api.patch(`/shared-finances/payments/${editingPayment.id}`, payload);
         } else {
-          setServerError("Error de validación. Revisa los campos.");
+          await api.post("/shared-finances/payments", payload);
         }
-      } else {
-        setServerError("Error al guardar el pago. Intenta de nuevo.");
+        mutate();
+        closeModal();
+      } catch (err) {
+        handleServerError(err, setServerError);
       }
-    }
-  };
+    },
+    [editingPayment, mutate, closeModal]
+  );
 
-  const handleDelete = async (payment) => {
-    if (
-      !window.confirm(
-        `¿Eliminar pago de $${Number(payment.amount).toLocaleString()}?`,
-      )
-    )
-      return;
+  const handleDelete = useCallback(async (payment) => {
+    if (!window.confirm(`¿Eliminar pago de $${formatCurrency(payment.amount)}?`)) return;
     try {
       await api.delete(`/shared-finances/payments/${payment.id}`);
-      setPayments((prev) => prev.filter((p) => p.id !== payment.id));
+      mutate();
     } catch (err) {
       console.error("Error deleting payment:", err);
     }
-  };
+  }, [mutate]);
 
   return (
     <>
@@ -152,9 +108,7 @@ export default function PaymentsPage() {
               >
                 arrow_back
               </button>
-              <h1 className="text-2xl font-bold text-text-primary">
-                Pagos Realizados
-              </h1>
+              <h1 className="text-2xl font-bold text-text-primary">Pagos Realizados</h1>
             </div>
             <p className="text-base text-text-secondary">
               Tus pagos registrados en gastos compartidos.
@@ -207,11 +161,7 @@ export default function PaymentsPage() {
             />
             {hasActiveFilters && (
               <button
-                onClick={() => {
-                  setSearch("");
-                  setDateFrom("");
-                  setDateTo("");
-                }}
+                onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); }}
                 className="px-3 py-2 text-sm font-medium text-text-secondary border border-outline rounded-lg hover:bg-surface-variant transition-all"
                 title="Limpiar filtros"
               >
@@ -220,20 +170,14 @@ export default function PaymentsPage() {
             )}
           </div>
         </div>
-        {loading ? (
-          <div className="text-center py-12 text-text-secondary">
-            Cargando pagos...
-          </div>
+        {isLoading ? (
+          <div className="text-center py-12 text-text-secondary">Cargando pagos...</div>
         ) : filteredPayments.length === 0 && hasActiveFilters ? (
           <div className="text-center py-12 text-text-secondary text-sm">
             No se encontraron pagos con los filtros aplicados.
           </div>
         ) : (
-          <PaymentTable
-            payments={filteredPayments}
-            onEdit={openEdit}
-            onDelete={handleDelete}
-          />
+          <PaymentTable payments={filteredPayments} onEdit={openEdit} onDelete={handleDelete} />
         )}
       </div>
 
@@ -246,9 +190,7 @@ export default function PaymentsPage() {
         defaultValues={
           editingPayment
             ? {
-                shared_expense_id: editingPayment.shared_expense_id
-                  ? String(editingPayment.shared_expense_id)
-                  : "",
+                shared_expense_id: editingPayment.shared_expense_id ? String(editingPayment.shared_expense_id) : "",
                 amount: String(editingPayment.amount),
                 paid_at: editingPayment.paid_at?.slice(0, 10) || "",
                 notes: editingPayment.notes || "",

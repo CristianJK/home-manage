@@ -1,98 +1,64 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreSharedExpenseRequest;
+use App\Http\Requests\UpdateSharedExpenseRequest;
+use App\Http\Resources\SharedExpenseResource;
 use App\Models\SharedExpense;
-use Illuminate\Http\Request;
+use App\Services\SharedExpenseService;
+use Illuminate\Http\JsonResponse;
 
-class SharedExpenseController extends Controller
+final class SharedExpenseController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public function __construct(
+        private readonly SharedExpenseService $expenseService,
+    ) {}
+
     public function index()
     {
-        return response()->json(SharedExpense::all());
+        return SharedExpenseResource::collection(
+            SharedExpense::with('payments')->latest('due_date')->get()
+        );
     }
 
     public function withPayments()
     {
-        return response()->json(
+        return SharedExpenseResource::collection(
             SharedExpense::with('payments.user')->latest('due_date')->get()
         );
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(StoreSharedExpenseRequest $request): JsonResponse
     {
-        $rules = [
-            'concept' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'frequency' => 'required|string|max:255',
-            'due_date' => 'required|date|after_or_equal:today',
-            'comment' => 'nullable|string|max:255',
-        ];
+        $expense = $this->expenseService->create(
+            $request->user(),
+            $request->toDto(),
+        );
 
-        if ($request->user()->isAdmin()) {
-            $rules['is_paid'] = 'boolean';
-        }
-
-        $validate = $request->validate($rules);
-        $validate['user_id'] = $request->user()->id;
-
-        if (!array_key_exists('is_paid', $validate)) {
-            $validate['is_paid'] = false;
-        }
-
-        $sharedExpense = SharedExpense::create($validate);
-
-        return response()->json($sharedExpense, 201);
+        return (new SharedExpenseResource($expense))
+            ->response()
+            ->setStatusCode(201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(SharedExpense $sharedExpense): SharedExpenseResource
     {
-        $sharedExpense = SharedExpense::findOrFail($id);
-        return response()->json($sharedExpense);
+        $sharedExpense->load('payments.user');
+        return new SharedExpenseResource($sharedExpense);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(UpdateSharedExpenseRequest $request, SharedExpense $sharedExpense): SharedExpenseResource
     {
-        $rules = [
-            'concept' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'frequency' => 'required|string|max:255',
-            'due_date' => 'required|date|after_or_equal:today',
-            'comment' => 'nullable|string|max:255',
-        ];
-
-        if ($request->user()->isAdmin()) {
-            $rules['is_paid'] = 'required|boolean';
-        }
-
-        $validate = $request->validate($rules);
-
-        $sharedExpense = SharedExpense::findOrFail($id);
-        $sharedExpense->update($validate);
-
-        return response()->json($sharedExpense);
+        $sharedExpense->update($request->validated());
+        return new SharedExpenseResource($sharedExpense);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(SharedExpense $sharedExpense): JsonResponse
     {
-        $sharedExpense = SharedExpense::findOrFail($id);
-        $sharedExpense->delete();
+        $this->expenseService->delete($sharedExpense);
         return response()->json($sharedExpense);
     }
 }
