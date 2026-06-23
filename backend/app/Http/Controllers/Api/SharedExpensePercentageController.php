@@ -28,6 +28,7 @@ final class SharedExpensePercentageController extends Controller
             'users' => $percentages->map(fn ($p) => [
                 'user_id' => $p->user_id,
                 'name' => $p->user->name,
+                'salary' => (float) ($p->user->salary ?? 0),
                 'percentage' => (float) $p->percentage,
             ]),
         ]);
@@ -69,6 +70,7 @@ final class SharedExpensePercentageController extends Controller
             'users' => $updated->map(fn ($p) => [
                 'user_id' => $p->user_id,
                 'name' => $p->user->name,
+                'salary' => (float) ($p->user->salary ?? 0),
                 'percentage' => (float) $p->percentage,
             ]),
         ]);

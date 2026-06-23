@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router";
 import useSWR from "swr";
 import api from "../services/api";
 import { TaskCard } from "../features/tasks/TaskCard";
@@ -8,7 +9,8 @@ import { handleServerError } from "../lib/errors";
 const fetcher = (url) => api.get(url).then((res) => res.data);
 
 export default function TaskPage() {
-  const { data: tasks = [], mutate } = useSWR("/task", fetcher);
+  const navigate = useNavigate();
+  const { data: tasks = [], isLoading, mutate } = useSWR("/task", fetcher);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [serverError, setServerError] = useState(null);
@@ -78,8 +80,16 @@ export default function TaskPage() {
   );
   const completed = useMemo(
     () => tasks.filter((t) => t.status === "completed").slice(0, 3),
-    [tasks, 3],
+    [tasks],
   );
+
+  const totalByStatus = useMemo(() => {
+    const counts = { pending: 0, in_progress: 0, completed: 0 };
+    tasks.forEach((t) => {
+      if (counts[t.status] !== undefined) counts[t.status]++;
+    });
+    return counts;
+  }, [tasks]);
 
   return (
     <>
@@ -105,9 +115,13 @@ export default function TaskPage() {
         </div>
       )}
 
-      {tasks.length === 0 ? (
+      {isLoading ? (
         <div className="text-center py-12 text-text-secondary">
           Cargando tareas...
+        </div>
+      ) : tasks.length === 0 ? (
+        <div className="text-center py-12 text-text-secondary">
+          No hay tareas
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -129,6 +143,14 @@ export default function TaskPage() {
                   onDelete={handleDelete}
                 />
               ))}
+              {totalByStatus.pending > 3 && (
+                <button
+                  onClick={() => navigate("/tasks/all?status=pending")}
+                  className="w-full text-sm text-primary hover:text-primary-hover font-medium text-center py-2 transition-colors cursor-pointer"
+                >
+                  Ver todas ({totalByStatus.pending})
+                </button>
+              )}
               <button
                 onClick={openCreate}
                 className="w-full border-2 border-dashed border-outline rounded-xl p-4 text-sm text-text-secondary hover:border-primary/50 hover:text-primary transition-all cursor-pointer text-center"
@@ -157,6 +179,14 @@ export default function TaskPage() {
                   onDelete={handleDelete}
                 />
               ))}
+              {totalByStatus.in_progress > 3 && (
+                <button
+                  onClick={() => navigate("/tasks/all?status=in_progress")}
+                  className="w-full text-sm text-primary hover:text-primary-hover font-medium text-center py-2 transition-colors cursor-pointer"
+                >
+                  Ver todas ({totalByStatus.in_progress})
+                </button>
+              )}
             </div>
           </div>
 
@@ -178,6 +208,14 @@ export default function TaskPage() {
                   onDelete={handleDelete}
                 />
               ))}
+              {totalByStatus.completed > 3 && (
+                <button
+                  onClick={() => navigate("/tasks/all?status=completed")}
+                  className="w-full text-sm text-primary hover:text-primary-hover font-medium text-center py-2 transition-colors cursor-pointer"
+                >
+                  Ver todas ({totalByStatus.completed})
+                </button>
+              )}
             </div>
           </div>
         </div>

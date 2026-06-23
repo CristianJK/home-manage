@@ -49,7 +49,7 @@ final class TaskController extends Controller
 
     public function update(UpdateTaskRequest $request, Task $task): TaskResource
     {
-        $task->update($request->validated());
+        $task = $this->taskService->update($task, $request->validated());
         return new TaskResource($task);
     }
 

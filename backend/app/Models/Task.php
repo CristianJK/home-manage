@@ -8,13 +8,20 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['title', 'description', 'status', 'user_id', 'frequency', 'scheduled_at'])]
 class Task extends Model
 {
     use HasFactory;
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function instances(): HasMany
+    {
+        return $this->hasMany(TaskInstance::class);
     }
 }

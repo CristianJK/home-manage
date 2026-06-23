@@ -19,7 +19,7 @@ export default function SharedFinancesPage() {
   const monthStart = useMemo(() => getMonthStart(), []);
 
   const { data: sharedFinances = [], mutate: mutateExpenses } = useSWR(
-    "/shared-expense",
+    "/shared-expense/with-payments",
     fetcher
   );
   const { data: percentagesData } = useSWR(
@@ -64,6 +64,51 @@ export default function SharedFinancesPage() {
     const owed = shouldPay - paid;
     return owed > 0 ? owed : 0;
   }, [user, percentages, thisMonthExpenses, totalMonth, payments]);
+
+  const breakdownUsers = useMemo(() => {
+    if (percentages.length === 0 || thisMonthExpenses.length === 0) return [];
+
+    const paymentsByUser = {};
+    thisMonthExpenses.forEach((exp) => {
+      (exp.payments || []).forEach((p) => {
+        const userId = p.user_id;
+        paymentsByUser[userId] = (paymentsByUser[userId] || 0) + Number(p.amount);
+      });
+    });
+
+    const colors = ["#1E40AF", "#64748B", "#059669", "#D97706", "#7C3AED", "#DB2777"];
+
+    return percentages.map((u, i) => {
+      const shouldPay = totalMonth * (u.percentage / 100);
+      const hasPaid = paymentsByUser[u.user_id] || 0;
+      const balance = hasPaid - shouldPay;
+      const name = u.name || "Usuario";
+      const initials = name
+        .split(" ")
+        .map((w) => w[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+
+      return {
+        user_id: u.user_id,
+        name,
+        initials,
+        percentage: u.percentage,
+        shouldPay,
+        hasPaid,
+        balance,
+        color: colors[i % colors.length],
+      };
+    });
+  }, [percentages, thisMonthExpenses, totalMonth]);
+
+  const salaryInfo = useMemo(() => {
+    const usersWithSalary = percentages.filter((u) => u.salary > 0);
+    if (usersWithSalary.length === 0) return null;
+    const parts = usersWithSalary.map((u) => `$${u.salary.toLocaleString()}`);
+    return `Basado en ingresos declarados de ${parts.join(" y ")} respectivamente.`;
+  }, [percentages]);
 
   const openCreate = useCallback(() => {
     setEditingExpense(null);
@@ -156,29 +201,8 @@ export default function SharedFinancesPage() {
           />
         </section>
         <SharedFinanceBreakdown
-          users={[
-            {
-              user_id: 1,
-              name: "Usuario A",
-              initials: "UA",
-              percentage: 60,
-              shouldPay: 2550,
-              hasPaid: 2820,
-              balance: 270,
-              color: "#1E40AF",
-            },
-            {
-              user_id: 2,
-              name: "Usuario B",
-              initials: "UB",
-              percentage: 40,
-              shouldPay: 1700,
-              hasPaid: 1430,
-              balance: -270,
-              color: "#64748B",
-            },
-          ]}
-          salaryInfo="Basado en ingresos declarados de $3.000 y $2.000 respectivamente."
+          users={breakdownUsers}
+          salaryInfo={salaryInfo}
           onAdjustPercentages={() => navigate("/shared-finances/percentages")}
         />
       </div>

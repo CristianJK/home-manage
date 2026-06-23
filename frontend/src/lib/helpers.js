@@ -5,7 +5,10 @@ export function formatCurrency(amount, fractionDigits = 2) {
   });
 }
 
-export function formatDate(dateStr, options = { day: "numeric", month: "short", year: "numeric" }) {
+export function formatDate(
+  dateStr,
+  options = { day: "numeric", month: "short", year: "numeric" },
+) {
   return new Date(dateStr).toLocaleDateString("es-ES", options);
 }
 
@@ -15,11 +18,16 @@ export function formatDateShort(dateStr) {
 
 export function daysUntilDue(dueDate) {
   const diff = Math.ceil(
-    (new Date(dueDate) - new Date()) / (1000 * 60 * 60 * 24)
+    (new Date(dueDate) - new Date()) / (1000 * 60 * 60 * 24),
   );
-  if (diff < 0) return "Vencido";
+  if (diff < 0) {
+    const daysOverdue = Math.abs(diff);
+    return `Vencido por ${daysOverdue} ${daysOverdue === 1 ? "día" : "días"}`;
+  }
+
   if (diff === 0) return "Hoy";
   if (diff === 1) return "Mañana";
+
   return `${diff} días`;
 }
 

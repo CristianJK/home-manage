@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\SharedExpensePercentageController;
 use App\Http\Controllers\Api\SharedExpensePaymentController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\TaskController;
+use App\Http\Controllers\Api\TaskInstanceController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\GoogleController;
 use Illuminate\Http\Request;
@@ -73,6 +74,11 @@ Route::prefix('task')->middleware('auth:sanctum')->group(function () {
     Route::get('/{task}', [TaskController::class, 'show']);
     Route::patch('/{task}', [TaskController::class, 'update']);
     Route::delete('/{task}', [TaskController::class, 'destroy']);
+});
+
+Route::prefix('task-instances')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [TaskInstanceController::class, 'index']);
+    Route::patch('/{taskInstance}', [TaskInstanceController::class, 'update']);
 });
 
 Route::prefix('admin')->middleware(['auth:sanctum', 'is-admin'])->group(function () {

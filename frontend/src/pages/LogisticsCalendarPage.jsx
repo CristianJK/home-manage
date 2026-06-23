@@ -12,17 +12,40 @@ export default function LogisticsCalendarPage() {
   const today = useMemo(() => new Date(), []);
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
-  const { data: tasks = [] } = useSWR("/task", fetcher);
+
+  const monthStart = useMemo(() => {
+    const d = new Date(currentYear, currentMonth, 1);
+    return d.toISOString().slice(0, 10);
+  }, [currentYear, currentMonth]);
+
+  const monthEnd = useMemo(() => {
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    return lastDay.toISOString().slice(0, 10);
+  }, [currentYear, currentMonth]);
+
+  const { data: taskInstances = [], mutate } = useSWR(
+    `/task-instances?from=${monthStart}&to=${monthEnd}`,
+    fetcher,
+  );
   const { data: expenses = [] } = useSWR("/shared-expense", fetcher);
   const [selectedDay, setSelectedDay] = useState(today.getDate());
-  const [completingTaskId, setCompletingTaskId] = useState(null);
+  const [completingId, setCompletingId] = useState(null);
 
   const events = useMemo(() => {
     const result = [];
-    tasks.forEach((task) => {
-      if (!task.scheduled_at) return;
-      const d = new Date(task.scheduled_at);
-      result.push({ id: `task-${task.id}`, type: "task", date: d, day: d.getDate(), month: d.getMonth(), year: d.getFullYear(), data: task });
+    taskInstances.forEach((instance) => {
+      if (!instance.scheduled_date) return;
+      const parts = instance.scheduled_date.split("-");
+      const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      result.push({
+        id: `task-${instance.id}`,
+        type: "task",
+        date: d,
+        day: d.getDate(),
+        month: d.getMonth(),
+        year: d.getFullYear(),
+        data: { ...instance.task, instance_id: instance.id, instance_status: instance.status },
+      });
     });
     expenses.forEach((expense) => {
       if (!expense.due_date) return;
@@ -30,7 +53,7 @@ export default function LogisticsCalendarPage() {
       result.push({ id: `expense-${expense.id}`, type: "expense", date: d, day: d.getDate(), month: d.getMonth(), year: d.getFullYear(), data: expense });
     });
     return result;
-  }, [tasks, expenses]);
+  }, [taskInstances, expenses]);
 
   const monthEvents = useMemo(() => events.filter((e) => e.month === currentMonth && e.year === currentYear), [events, currentMonth, currentYear]);
 
@@ -62,15 +85,16 @@ export default function LogisticsCalendarPage() {
   }, []);
 
   const handleCompleteTask = useCallback(async (task) => {
-    setCompletingTaskId(task.id);
+    setCompletingId(task.id);
     try {
-      await api.patch(`/task/${task.id}`, { status: "completed" });
+      await api.patch(`/task-instances/${task.instance_id}`, { status: "completed" });
+      mutate();
     } catch (err) {
       console.error("Error completing task:", err);
     } finally {
-      setCompletingTaskId(null);
+      setCompletingId(null);
     }
-  }, []);
+  }, [mutate]);
 
   const firstDay = new Date(currentYear, currentMonth, 1);
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -151,7 +175,7 @@ export default function LogisticsCalendarPage() {
                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${event.type === "task" ? "bg-primary/10 text-primary" : "bg-error/10 text-error"}`}>
                       {event.type === "task" ? "Tarea" : "Gasto Compartido"}
                     </span>
-                    {event.type === "task" && event.data.status === "completed" && <span className="text-[10px] font-medium text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">Completada</span>}
+                    {event.type === "task" && event.data.instance_status === "completed" && <span className="text-[10px] font-medium text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">Completada</span>}
                     {event.type === "expense" && event.data.is_paid && <span className="text-[10px] font-medium text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">Pagado</span>}
                   </div>
                   <h4 className="text-sm font-semibold text-text-primary">
@@ -176,9 +200,9 @@ export default function LogisticsCalendarPage() {
                       <span className="text-xs font-medium text-text-secondary">{event.data.user.name || "Sin asignar"}</span>
                     </div>
                   )}
-                  {event.type === "task" && event.data.status !== "completed" && (
-                    <button onClick={() => handleCompleteTask(event.data)} disabled={completingTaskId === event.data.id} className="w-full bg-primary text-white py-2 rounded-lg text-xs font-semibold hover:shadow-lg transition-all active:scale-95 flex items-center justify-center gap-1.5 disabled:opacity-50">
-                      {completingTaskId === event.data.id ? "Completando..." : "Marcar como completada"}
+                  {event.type === "task" && event.data.instance_status !== "completed" && (
+                    <button onClick={() => handleCompleteTask(event.data)} disabled={completingId === event.data.id} className="w-full bg-primary text-white py-2 rounded-lg text-xs font-semibold hover:shadow-lg transition-all active:scale-95 flex items-center justify-center gap-1.5 disabled:opacity-50">
+                      {completingId === event.data.id ? "Completando..." : "Marcar como completada"}
                     </button>
                   )}
                 </div>

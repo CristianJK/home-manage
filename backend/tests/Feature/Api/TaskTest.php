@@ -3,7 +3,9 @@
 namespace Tests\Feature\Api;
 
 use App\Models\Task;
+use App\Models\TaskInstance;
 use App\Models\User;
+use App\Services\TaskService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -195,5 +197,195 @@ class TaskTest extends TestCase
         $response = $this->deleteJson('/api/task/99999');
 
         $response->assertStatus(404);
+    }
+
+    private function createRecurringTaskViaApi(string $frequency = 'daily', ?string $scheduledAt = null): Task
+    {
+        $payload = [
+            'title' => 'Recurring task',
+            'status' => 'pending',
+            'frequency' => $frequency,
+            'scheduled_at' => $scheduledAt ?? now()->toDateString(),
+        ];
+
+        $response = $this->postJson('/api/task', $payload);
+        return Task::find($response->json('id'));
+    }
+
+    private function makeRecurringTask(string $frequency = 'daily'): Task
+    {
+        $task = Task::factory()->create([
+            'user_id' => $this->user->id,
+            'frequency' => $frequency,
+            'scheduled_at' => now()->toDateString(),
+        ]);
+
+        app(TaskService::class)->generateInstances($task);
+
+        return $task;
+    }
+
+    // ─── INSTANCE GENERATION ──────────────────────────────────────────
+
+    public function test_create_task_with_frequency_generates_instances(): void
+    {
+        $payload = [
+            'title' => 'Clean kitchen',
+            'status' => 'pending',
+            'frequency' => 'daily',
+            'scheduled_at' => now()->toDateString(),
+        ];
+
+        $response = $this->postJson('/api/task', $payload);
+
+        $response->assertStatus(201);
+        $taskId = $response->json('id');
+
+        $this->assertDatabaseHas('task_instances', [
+            'task_id' => $taskId,
+            'status' => 'pending',
+        ]);
+
+        $instances = TaskInstance::where('task_id', $taskId)->get();
+        $this->assertCount(6, $instances);
+    }
+
+    public function test_create_task_without_frequency_creates_single_instance(): void
+    {
+        $payload = [
+            'title' => 'One time task',
+            'status' => 'pending',
+            'scheduled_at' => now()->addDays(3)->toDateString(),
+        ];
+
+        $response = $this->postJson('/api/task', $payload);
+
+        $response->assertStatus(201);
+        $taskId = $response->json('id');
+
+        $instances = TaskInstance::where('task_id', $taskId)->get();
+        $this->assertCount(1, $instances);
+        $this->assertEquals(now()->addDays(3)->toDateString(), $instances->first()->scheduled_date->toDateString());
+    }
+
+    public function test_recurring_task_generates_max_six_instances(): void
+    {
+        $payload = [
+            'title' => 'Weekly task',
+            'status' => 'pending',
+            'frequency' => 'weekly',
+            'scheduled_at' => now()->toDateString(),
+        ];
+
+        $response = $this->postJson('/api/task', $payload);
+
+        $response->assertStatus(201);
+        $taskId = $response->json('id');
+
+        $instances = TaskInstance::where('task_id', $taskId)->get();
+        $this->assertCount(6, $instances);
+
+        $dates = $instances->pluck('scheduled_date')->map(fn ($d) => $d->toDateString())->toArray();
+        $expected = [];
+        $current = now()->startOfDay();
+        for ($i = 0; $i < 6; $i++) {
+            $expected[] = $current->format('Y-m-d');
+            $current->addWeek();
+        }
+        $this->assertEquals($expected, $dates);
+    }
+
+    public function test_update_frequency_regenerates_instances(): void
+    {
+        $task = $this->makeRecurringTask('daily');
+
+        $this->assertCount(6, $task->instances);
+
+        $response = $this->patchJson("/api/task/{$task->id}", [
+            'frequency' => 'weekly',
+        ]);
+
+        $response->assertOk();
+
+        $task->refresh();
+        $this->assertCount(6, $task->instances()->where('status', 'pending')->get());
+
+        $dates = $task->instances->pluck('scheduled_date')->map(fn ($d) => $d instanceof \Carbon\Carbon ? $d->format('Y-m-d') : $d)->toArray();
+        $expected = [];
+        $current = now()->startOfDay();
+        for ($i = 0; $i < 6; $i++) {
+            $expected[] = $current->format('Y-m-d');
+            $current->addWeek();
+        }
+        $this->assertEquals($expected, $dates);
+    }
+
+    public function test_remove_frequency_deletes_instances(): void
+    {
+        $task = $this->makeRecurringTask('daily');
+
+        $this->assertCount(6, $task->instances);
+
+        $response = $this->patchJson("/api/task/{$task->id}", [
+            'frequency' => null,
+        ]);
+
+        $response->assertOk();
+
+        $task->refresh();
+        $this->assertCount(0, $task->instances()->where('status', 'pending')->get());
+    }
+
+    // ─── TASK INSTANCE CONTROLLER ─────────────────────────────────────
+
+    public function test_can_list_task_instances_by_date_range(): void
+    {
+        $this->makeRecurringTask('daily');
+
+        $from = now()->toDateString();
+        $to = now()->addDays(2)->toDateString();
+
+        $response = $this->getJson("/api/task-instances?from={$from}&to={$to}");
+
+        $response->assertOk();
+        $this->assertCount(3, $response->json());
+    }
+
+    public function test_can_complete_task_instance(): void
+    {
+        $task = $this->makeRecurringTask('daily');
+
+        $instance = $task->instances()->first();
+
+        $response = $this->patchJson("/api/task-instances/{$instance->id}", [
+            'status' => 'completed',
+        ]);
+
+        $response->assertOk();
+        $this->assertDatabaseHas('task_instances', [
+            'id' => $instance->id,
+            'status' => 'completed',
+        ]);
+    }
+
+    public function test_cannot_update_instance_of_other_user(): void
+    {
+        $otherUser = User::factory()->create();
+        $task = Task::factory()->create([
+            'user_id' => $otherUser->id,
+            'frequency' => 'daily',
+            'scheduled_at' => now()->toDateString(),
+        ]);
+        app(TaskService::class)->generateInstances($task);
+
+        $instance = $task->instances()->first();
+
+        Sanctum::actingAs($this->user);
+
+        $response = $this->patchJson("/api/task-instances/{$instance->id}", [
+            'status' => 'completed',
+        ]);
+
+        $response->assertStatus(403);
     }
 }
