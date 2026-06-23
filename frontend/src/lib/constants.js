@@ -25,13 +25,13 @@ export const categoryConfig = {
 };
 
 export const savingCategoryConfig = {
-  emergency: { icon: "ambulance", label: "Emergencia", color: "bg-red-500" },
-  travel: { icon: "flight", label: "Viajes", color: "bg-sky-500" },
-  housing: { icon: "home", label: "Vivienda", color: "bg-violet-500" },
-  education: { icon: "school", label: "Educación", color: "bg-orange-500" },
-  health: { icon: "favorite", label: "Salud", color: "bg-rose-500" },
-  investment: { icon: "trending_up", label: "Inversión", color: "bg-emerald-500" },
-  other: { icon: "more_horiz", label: "Otro", color: "bg-slate-500" },
+  emergency: { icon: "ambulance", label: "Emergencia", color: "text-text-secondary" },
+  travel: { icon: "flight", label: "Viajes", color: "text-text-secondary" },
+  housing: { icon: "home", label: "Vivienda", color: "text-text-secondary" },
+  education: { icon: "school", label: "Educación", color: "text-text-secondary" },
+  health: { icon: "favorite", label: "Salud", color: "text-text-secondary" },
+  investment: { icon: "trending_up", label: "Inversión", color: "text-text-secondary" },
+  other: { icon: "more_horiz", label: "Otro", color: "text-text-secondary" },
 };
 
 export const conceptOptions = [
