@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { categoryConfig as savingCategoryConfig } from "../../lib/constants";
+import { savingCategoryConfig } from "../../lib/constants";
 import { formatCurrency } from "../../lib/helpers";
 
 export const SavingCard = memo(function SavingCard({ saving, onEdit, onDelete }) {

@@ -198,7 +198,7 @@ export default function SharedFinancesPage() {
             return (
               <div key={m} className="flex-1 flex flex-col items-center gap-2">
                 <div
-                  className={`w-full rounded-t-lg ${isLast ? "bg-primary" : "bg-surface-variant"}`}
+                  className={`w-full rounded-t-lg relative ${isLast ? "bg-primary" : "bg-surface-variant"}`}
                   style={{ height: heights[i] }}
                 >
                   {!isLast && <div className="absolute inset-0 bg-primary opacity-20"></div>}
